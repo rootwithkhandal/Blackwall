@@ -1,0 +1,58 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+pip-wheel-metadata/
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+blackwall/
+.env/
+
+# ── Environment / secrets ──────────────────────────────────────────────────────
+.env
+.env.*
+*.pem          # RSA private key — never commit fw_key.pem
+*.key
+*.p12
+*.pfx
+
+# ── BlackWall runtime files ───────────────────────────────────────────────────
+ledger.json            # Blockchain ledger (can grow large)
+ledger_export.json     # On-demand export
+rules.json             # Persisted firewall rules (may contain sensitive IPs)
+
+# ── Streamlit ─────────────────────────────────────────────────────────────────
+.streamlit/
+
+# ── OS / editor ───────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Logs & temp ───────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.bak
+tmp/
+temp/
+
+# ── Testing & coverage ────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
