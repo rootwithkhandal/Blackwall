@@ -2,14 +2,25 @@
 """
 blockchain.py — Immutable append-only ledger with RSA block signing,
 optional proof-of-work, and JSON export.
+
+PoW note: mining is intentionally applied only to the genesis block and
+rule-change blocks, NOT to high-frequency packet-log blocks.  Applying
+PoW to every packet would stall the sniffer thread under real traffic.
 """
 
 import hashlib
 import json
 import os
+import threading
 import time
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
+
+# Project root is two levels up from this file (blackwall/blockchain.py)
+_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Block types that warrant proof-of-work
+_POW_TYPES = {"genesis", "rule_add", "rule_delete"}
 
 
 class Block:
@@ -36,7 +47,8 @@ class Block:
 
     def calc_hash(self) -> str:
         block_str = (
-            f"{self.index}{self.timestamp}{json.dumps(self.data, sort_keys=True)}"
+            f"{self.index}{self.timestamp}"
+            f"{json.dumps(self.data, sort_keys=True, default=str)}"
             f"{self.prev_hash}{self.nonce}"
         )
         return hashlib.sha256(block_str.encode()).hexdigest()
@@ -66,7 +78,7 @@ class Block:
 
     @staticmethod
     def from_dict(d: dict) -> "Block":
-        sig      = d.get("signature")
+        sig       = d.get("signature")
         sig_bytes = bytes.fromhex(sig) if sig else None
         blk = Block(
             d["index"],
@@ -90,6 +102,7 @@ class Block:
         )
 
     def verify(self, public_key) -> bool:
+        """Return True only when the signature is cryptographically valid."""
         if not self.signature or not public_key:
             return False
         try:
@@ -109,14 +122,22 @@ class Blockchain:
         self,
         public_key=None,
         private_key=None,
-        ledger_file: str = "ledger.json",
+        ledger_file: str | None = None,
         difficulty: int = 2,
     ):
         self.chain       : list[Block] = []
         self.public_key  = public_key
         self.private_key = private_key
+        self.difficulty  = difficulty
+        self._lock       = threading.Lock()   # serialise concurrent add_block calls
+
+        # Default ledger lives in <project_root>/data/ledger.json
+        if ledger_file is None:
+            data_dir = os.path.join(_ROOT, "data")
+            os.makedirs(data_dir, exist_ok=True)
+            ledger_file = os.path.join(data_dir, "ledger.json")
         self.ledger_file = ledger_file
-        self.difficulty  = difficulty   # proof-of-work difficulty (0 = disabled)
+
         self.load()
         if not self.chain:
             self.add_block("genesis")
@@ -126,14 +147,21 @@ class Blockchain:
     # ------------------------------------------------------------------
 
     def add_block(self, data) -> Block:
-        prev_hash = self.chain[-1].hash if self.chain else "0"
-        blk = Block(len(self.chain), prev_hash, data, signer="fw")
-        if self.difficulty > 0:
-            blk.mine(self.difficulty)
-        if self.private_key:
-            blk.sign(self.private_key)
-        self.chain.append(blk)
-        self._append_block_file(blk)
+        """Append a new block. PoW is applied only to rule/genesis blocks."""
+        with self._lock:
+            prev_hash = self.chain[-1].hash if self.chain else "0"
+            blk = Block(len(self.chain), prev_hash, data, signer="fw")
+
+            # Determine whether this block type warrants PoW
+            block_type = data if isinstance(data, str) else data.get("type", "")
+            if self.difficulty > 0 and block_type in _POW_TYPES:
+                blk.mine(self.difficulty)
+
+            if self.private_key:
+                blk.sign(self.private_key)
+
+            self.chain.append(blk)
+            self._append_block_file(blk)
         return blk
 
     # ------------------------------------------------------------------
@@ -141,25 +169,34 @@ class Blockchain:
     # ------------------------------------------------------------------
 
     def _append_block_file(self, blk: Block) -> None:
+        """Append a single block line to the ledger file (called under lock)."""
         with open(self.ledger_file, "a") as f:
             f.write(json.dumps(blk.to_dict()) + "\n")
 
     def load(self) -> None:
+        """Load the chain from disk. Skips corrupted lines gracefully."""
         self.chain = []
-        if os.path.exists(self.ledger_file):
-            with open(self.ledger_file, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
-                        try:
-                            self.chain.append(Block.from_dict(json.loads(line)))
-                        except (json.JSONDecodeError, KeyError):
-                            continue  # skip corrupted lines
+        if not os.path.exists(self.ledger_file):
+            return
+        with open(self.ledger_file, "r") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    self.chain.append(Block.from_dict(json.loads(line)))
+                except (json.JSONDecodeError, KeyError):
+                    continue
 
-    def export_json(self, path: str = "ledger_export.json") -> str:
+    def export_json(self, path: str | None = None) -> str:
         """Export the full chain to a pretty-printed JSON file."""
+        if path is None:
+            path = os.path.join(_ROOT, "data", "ledger_export.json")
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with self._lock:
+            chain_copy = [b.to_dict() for b in self.chain]
         with open(path, "w") as f:
-            json.dump([b.to_dict() for b in self.chain], f, indent=2)
+            json.dump(chain_copy, f, indent=2)
         return path
 
     # ------------------------------------------------------------------
@@ -168,14 +205,16 @@ class Blockchain:
 
     def check_integrity(self) -> list[dict]:
         """
-        Returns a list of issue dicts with keys: index, issue.
+        Walk the chain and return a list of issue dicts {index, issue}.
         Empty list means the chain is clean.
         """
         issues: list[dict] = []
-        for i, blk in enumerate(self.chain):
+        with self._lock:
+            chain = list(self.chain)
+        for i, blk in enumerate(chain):
             if blk.hash != blk.calc_hash():
                 issues.append({"index": i, "issue": "Hash mismatch"})
-            if i > 0 and blk.prev_hash != self.chain[i - 1].hash:
+            if i > 0 and blk.prev_hash != chain[i - 1].hash:
                 issues.append({"index": i, "issue": "Prev-hash mismatch"})
             if self.public_key and not blk.verify(self.public_key):
                 issues.append({"index": i, "issue": "Invalid signature"})
@@ -189,8 +228,11 @@ class Blockchain:
         return len(self.chain)
 
     def summary(self) -> dict:
+        with self._lock:
+            latest = self.chain[-1].hash if self.chain else None
+            total  = len(self.chain)
         return {
-            "total_blocks": len(self.chain),
-            "latest_hash":  self.chain[-1].hash if self.chain else None,
+            "total_blocks": total,
+            "latest_hash":  latest,
             "difficulty":   self.difficulty,
         }

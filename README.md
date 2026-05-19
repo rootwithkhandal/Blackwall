@@ -96,14 +96,28 @@ streamlit run app.py
 
 ```
 BlackWall/
-├── app.py              # Streamlit dashboard (7 pages)
-├── firewall.py         # Firewall engine — rules, rate limiting, auto-ban
-├── blockchain.py       # Blockchain ledger — PoW, RSA signing, export
-├── rules.json          # Persisted firewall rules (auto-created)
-├── ledger.json         # Append-only blockchain log (auto-created)
-├── ledger_export.json  # Full-chain JSON export (generated on demand)
-├── fw_key.pem          # RSA-2048 private key (auto-generated, keep secret)
-├── requirements.txt    # Python dependencies
+├── app.py                        # Entry point — init & page routing only
+├── blackwall/
+│   ├── __init__.py
+│   ├── blockchain.py             # Block, Blockchain — PoW, RSA signing, export
+│   ├── firewall.py               # Firewall, RateLimiter — rules, auto-ban
+│   └── pages/
+│       ├── __init__.py
+│       ├── live_logs.py          # Real-time packet feed
+│       ├── threat_stats.py       # Cumulative stats & charts
+│       ├── manage_rules.py       # Add / delete rules
+│       ├── banned_ips.py         # View & unban auto-banned IPs
+│       ├── ledger_integrity.py   # Tamper detection
+│       ├── block_inspector.py    # Per-block hash & signature viewer
+│       └── export_ledger.py      # Download chain as JSON
+├── data/                         # Runtime files (git-ignored)
+│   ├── ledger.json               # Append-only blockchain log
+│   ├── rules.json                # Persisted firewall rules
+│   └── ledger_export.json        # On-demand export
+├── fw_key.pem                    # RSA-2048 private key (auto-generated, git-ignored)
+├── requirements.txt
+├── install.sh
+├── .gitignore
 └── README.md
 ```
 

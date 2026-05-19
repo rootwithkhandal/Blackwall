@@ -15,7 +15,8 @@ pip-wheel-metadata/
 .venv/
 venv/
 env/
-blackwall/
+.pyenv/
+blackwall-env/
 .env/
 
 # ── Environment / secrets ──────────────────────────────────────────────────────
@@ -27,9 +28,7 @@ blackwall/
 *.pfx
 
 # ── BlackWall runtime files ───────────────────────────────────────────────────
-ledger.json            # Blockchain ledger (can grow large)
-ledger_export.json     # On-demand export
-rules.json             # Persisted firewall rules (may contain sensitive IPs)
+data/                  # ledger.json, rules.json, ledger_export.json live here
 
 # ── Streamlit ─────────────────────────────────────────────────────────────────
 .streamlit/
