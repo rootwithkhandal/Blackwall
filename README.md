@@ -77,7 +77,7 @@ Python 3.11+ recommended.
 ## Installation
 
 ```bash
-git clone https://github.com/yourusername/blackwall.git
+git clone https://github.com/rootwithkhandal/blackwall.git
 cd blackwall
 
 python3 -m venv .venv
