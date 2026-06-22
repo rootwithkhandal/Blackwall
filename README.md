@@ -1,6 +1,6 @@
 # BlackWall
 
-**A homelab-grade Security Operations Centre firewall with ML anomaly detection, blockchain-backed logging, SIEM alert forwarding, and a full Streamlit dashboard.**
+**A homelab-grade Security Operations Centre firewall with ML anomaly detection, blockchain-backed logging, SIEM alert forwarding, and a premium Streamlit dashboard.**
 
 ---
 
@@ -19,7 +19,8 @@ BlackWall turns your Linux machine into a mini SOC. It captures live network pac
 | **SIEM integration** | Fire-and-forget alert forwarding to Splunk HEC and Wazuh agent socket |
 | **Firewall engine** | Rule persistence (JSON), rule deletion, automatic IP banning |
 | **Blockchain** | Proof-of-work mining (configurable difficulty), stable JSON-serialised data hashing, one-click JSON export |
-| **Dashboard** | 7 pages: live logs, threat stats, rule manager, banned IPs, ledger integrity, block inspector, ledger export |
+| **Dashboard** | 7 pages with premium dark theme, glassmorphism cards, gradient accents, Plotly dark charts, live ML status badge |
+| **Design system** | Custom Streamlit theme, Inter font, color-coded stats (green/red/yellow), animated sidebar, styled empty states |
 | **Code quality** | Type hints throughout, thread-safe locks, bounded packet buffer, graceful iptables fallback on Windows |
 
 ---
@@ -105,7 +106,7 @@ BlackWall/
 │   └── dashboard/                     # Streamlit UI (pip: "blackwall-dashboard")
 │       ├── dashboard/
 │       │   ├── __init__.py
-│       │   ├── app.py                 # Entry point — init & page routing
+│       │   ├── app.py                 # Entry point — init, CSS injection, page routing
 │       │   └── pages/
 │       │       ├── __init__.py
 │       │       ├── live_logs.py
@@ -117,6 +118,8 @@ BlackWall/
 │       │       └── export_ledger.py
 │       └── pyproject.toml
 │
+├── .streamlit/
+│   └── config.toml                    # Custom dark theme (colors, font)
 ├── scripts/
 │   └── install.sh                     # Automated setup (Linux / macOS)
 ├── data/                              # Runtime files (git-ignored)
@@ -125,6 +128,7 @@ BlackWall/
 │   └── banned_ips.json
 ├── pyproject.toml                     # Root workspace config (linters, formatters)
 ├── mise.toml                          # Task runner (mise)
+├── .env                               # SIEM credentials (git-ignored)
 ├── .env.example                       # SIEM credential template
 ├── .gitignore
 ├── LICENSE
@@ -216,6 +220,7 @@ If neither `SPLUNK_HEC_URL`/`SPLUNK_HEC_TOKEN` nor `WAZUH_SOCKET_PATH` is set, t
 | PoW difficulty | `packages/dashboard` → `app.py` → `Blockchain(..., difficulty=2)` | 2 leading zeros |
 | Packet buffer size | `packages/dashboard` → `app.py` → buffer trim logic | 5 000 / trim to 2 000 |
 | Attack spike alert | `packages/dashboard` → `live_logs.py` → `DROP_THRESHOLD` | 15 drops / 10 pkts |
+| Dashboard theme | `.streamlit/config.toml` | Deep purple dark theme |
 | Splunk HEC URL | env var `SPLUNK_HEC_URL` | _(disabled)_ |
 | Splunk HEC token | env var `SPLUNK_HEC_TOKEN` | _(disabled)_ |
 | Wazuh socket path | env var `WAZUH_SOCKET_PATH` | _(disabled)_ |
@@ -261,6 +266,7 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 - [x] ML-based anomaly detection (IsolationForest)
 - [x] Splunk HEC / Wazuh alert forwarding
 - [x] Monorepo architecture
+- [x] Premium dark-theme dashboard with glassmorphism and gradient accents
 - [ ] GeoIP world-map heatmap (MaxMind GeoLite2)
 - [ ] Discord / Slack webhook alerts on spike detection
 - [ ] Threat-intel feed integration (AbuseIPDB, Shodan)

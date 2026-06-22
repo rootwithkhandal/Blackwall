@@ -5,10 +5,11 @@ import streamlit as st
 
 def render(fw, ledger) -> None:
     st.title("💾 Export Blockchain Ledger")
-    st.write(f"Chain contains **{len(ledger.chain)}** blocks.")
 
-    if st.button("Generate Export"):
-        # export_json() resolves the path internally to data/ledger_export.json
+    st.metric("Chain Length", f"{len(ledger.chain):,} blocks")
+    st.markdown("")
+
+    if st.button("📦 Generate Export", type="primary"):
         export_path = ledger.export_json()
         with open(export_path, "r") as f:
             data = f.read()
@@ -18,4 +19,4 @@ def render(fw, ledger) -> None:
             file_name="ledger_export.json",
             mime="application/json",
         )
-        st.success(f"Export ready: {export_path}")
+        st.success(f"✅ Export ready: `{export_path}`")

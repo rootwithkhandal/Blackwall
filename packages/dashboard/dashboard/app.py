@@ -39,6 +39,287 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ── Premium CSS ────────────────────────────────────────────────────────────────
+st.markdown("""
+<style>
+/* ── Google Font ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* { font-family: 'Inter', sans-serif !important; }
+
+/* ── Hide default Streamlit multi-page nav ───────────────────────────────── */
+[data-testid="stSidebarNav"] { display: none !important; }
+header[data-testid="stHeader"] { background: transparent !important; }
+
+/* ── Main area ───────────────────────────────────────────────────────────── */
+.main .block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+    max-width: 1400px;
+}
+
+/* ── Sidebar ─────────────────────────────────────────────────────────────── */
+section[data-testid="stSidebar"] {
+    background: linear-gradient(180deg, #0D1120 0%, #131825 50%, #0D1120 100%);
+    border-right: 1px solid rgba(124, 106, 255, 0.12);
+}
+
+section[data-testid="stSidebar"] .stRadio > div {
+    gap: 2px;
+}
+
+section[data-testid="stSidebar"] .stRadio > div > label {
+    background: rgba(124, 106, 255, 0.04);
+    border: 1px solid rgba(124, 106, 255, 0.08);
+    border-radius: 8px;
+    padding: 0.55rem 0.85rem;
+    margin: 0;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+section[data-testid="stSidebar"] .stRadio > div > label:hover {
+    background: rgba(124, 106, 255, 0.12);
+    border-color: rgba(124, 106, 255, 0.25);
+    transform: translateX(3px);
+}
+
+section[data-testid="stSidebar"] .stRadio > div > label[data-checked="true"],
+section[data-testid="stSidebar"] .stRadio > div > label:has(input:checked) {
+    background: linear-gradient(135deg, rgba(124, 106, 255, 0.2) 0%, rgba(99, 179, 237, 0.12) 100%);
+    border-color: rgba(124, 106, 255, 0.4);
+    box-shadow: 0 0 15px rgba(124, 106, 255, 0.1);
+}
+
+/* ── Metric cards ────────────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background: linear-gradient(135deg, rgba(124, 106, 255, 0.06) 0%, rgba(99, 179, 237, 0.04) 100%);
+    border: 1px solid rgba(124, 106, 255, 0.12);
+    border-radius: 12px;
+    padding: 1rem 1.2rem;
+    transition: all 0.3s ease;
+}
+
+[data-testid="stMetric"]:hover {
+    border-color: rgba(124, 106, 255, 0.3);
+    box-shadow: 0 4px 20px rgba(124, 106, 255, 0.08);
+    transform: translateY(-2px);
+}
+
+[data-testid="stMetricLabel"] {
+    font-size: 0.75rem !important;
+    font-weight: 500 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #8B95A8 !important;
+}
+
+[data-testid="stMetricValue"] {
+    font-size: 1.8rem !important;
+    font-weight: 700 !important;
+    background: linear-gradient(135deg, #E8ECF4, #7C6AFF);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── DataFrames / Tables ─────────────────────────────────────────────────── */
+[data-testid="stDataFrame"] {
+    border: 1px solid rgba(124, 106, 255, 0.1);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.stButton > button {
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    transition: all 0.25s ease;
+    border: 1px solid rgba(124, 106, 255, 0.3);
+}
+
+.stButton > button:hover {
+    box-shadow: 0 4px 15px rgba(124, 106, 255, 0.2);
+    transform: translateY(-1px);
+}
+
+.stButton > button[kind="primary"] {
+    background: linear-gradient(135deg, #7C6AFF 0%, #5B4FD9 100%);
+    border: none;
+}
+
+/* ── Expanders ───────────────────────────────────────────────────────────── */
+[data-testid="stExpander"] {
+    border: 1px solid rgba(124, 106, 255, 0.12);
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+[data-testid="stExpander"] summary {
+    font-weight: 600;
+}
+
+/* ── Alerts ──────────────────────────────────────────────────────────────── */
+[data-testid="stAlert"] {
+    border-radius: 10px;
+    border-left: 4px solid;
+}
+
+/* ── Inputs ──────────────────────────────────────────────────────────────── */
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input,
+[data-testid="stSelectbox"] > div > div {
+    border-radius: 8px !important;
+    border-color: rgba(124, 106, 255, 0.15) !important;
+    transition: border-color 0.2s ease;
+}
+
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus {
+    border-color: rgba(124, 106, 255, 0.5) !important;
+    box-shadow: 0 0 10px rgba(124, 106, 255, 0.1) !important;
+}
+
+/* ── Page titles ─────────────────────────────────────────────────────────── */
+h1 {
+    font-weight: 700 !important;
+    letter-spacing: -0.02em !important;
+    padding-bottom: 0.3rem !important;
+    border-bottom: 2px solid rgba(124, 106, 255, 0.15);
+    margin-bottom: 1.5rem !important;
+}
+
+h2, h3 {
+    font-weight: 600 !important;
+    letter-spacing: -0.01em !important;
+    color: #C5CBE0 !important;
+}
+
+/* ── Dividers ────────────────────────────────────────────────────────────── */
+hr {
+    border-color: rgba(124, 106, 255, 0.1) !important;
+}
+
+/* ── Captions ────────────────────────────────────────────────────────────── */
+.stCaption, small {
+    color: #5A6478 !important;
+}
+
+/* ── Slider ──────────────────────────────────────────────────────────────── */
+[data-testid="stSlider"] > div > div > div {
+    background: linear-gradient(90deg, #7C6AFF, #63B3ED) !important;
+}
+
+/* ── Plotly chart containers ─────────────────────────────────────────────── */
+[data-testid="stPlotlyChart"] {
+    border: 1px solid rgba(124, 106, 255, 0.08);
+    border-radius: 12px;
+    padding: 0.5rem;
+    background: rgba(124, 106, 255, 0.02);
+}
+
+/* ── Custom scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #0B0F19; }
+::-webkit-scrollbar-thumb { background: #2A2F42; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #3A3F55; }
+
+/* ── Sidebar brand ───────────────────────────────────────────────────────── */
+.brand-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(135deg, #7C6AFF 0%, #63B3ED 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 0.2rem;
+}
+
+.brand-subtitle {
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.15em;
+    color: #5A6478;
+    margin-bottom: 1.2rem;
+}
+
+.sidebar-stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin: 0.8rem 0;
+}
+
+.sidebar-stat {
+    background: rgba(124, 106, 255, 0.06);
+    border: 1px solid rgba(124, 106, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.7rem 0.8rem;
+    text-align: center;
+}
+
+.sidebar-stat-value {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #E8ECF4;
+    line-height: 1.2;
+}
+
+.sidebar-stat-label {
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #5A6478;
+    margin-top: 2px;
+}
+
+.stat-allow .sidebar-stat-value { color: #4ADE80; }
+.stat-drop  .sidebar-stat-value { color: #F87171; }
+.stat-ban   .sidebar-stat-value { color: #FBBF24; }
+
+.sidebar-footer {
+    font-size: 0.65rem;
+    color: #3A4255;
+    text-align: center;
+    padding: 0.5rem 0;
+    border-top: 1px solid rgba(124, 106, 255, 0.08);
+    margin-top: 0.5rem;
+}
+
+/* ── ML badge ────────────────────────────────────────────────────────────── */
+.ml-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: linear-gradient(135deg, rgba(124, 106, 255, 0.15), rgba(99, 179, 237, 0.1));
+    border: 1px solid rgba(124, 106, 255, 0.2);
+    border-radius: 20px;
+    padding: 4px 12px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #A5B4FC;
+    letter-spacing: 0.05em;
+}
+
+.ml-badge-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #4ADE80;
+    animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+</style>
+""", unsafe_allow_html=True)
+
 # ── Data directory (project root / data) ───────────────────────────────────────
 _DATA_DIR = os.path.join(os.getcwd(), "data")
 os.makedirs(_DATA_DIR, exist_ok=True)
@@ -74,7 +355,6 @@ if "fw" not in st.session_state:
 fw: Firewall = st.session_state["fw"]
 
 # ── Packet queue & buffer ──────────────────────────────────────────────────────
-# The sniffer thread pushes raw dicts here; the main thread drains it.
 if "pkt_queue" not in st.session_state:
     st.session_state["pkt_queue"] = queue.SimpleQueue()
 
@@ -120,26 +400,59 @@ if len(st.session_state["packets"]) > 5000:
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 PAGES = {
-    "🖥️ Live Logs":        live_logs,
-    "📊 Threat Stats":     threat_stats,
-    "📋 Manage Rules":     manage_rules,
-    "🚫 Banned IPs":       banned_ips,
-    "🔒 Ledger Integrity": ledger_integrity,
-    "🔍 Block Inspector":  block_inspector,
-    "💾 Export Ledger":    export_ledger,
+    "🖥️  Live Logs":        live_logs,
+    "📊  Threat Stats":     threat_stats,
+    "📋  Manage Rules":     manage_rules,
+    "🚫  Banned IPs":       banned_ips,
+    "🔒  Ledger Integrity": ledger_integrity,
+    "🔍  Block Inspector":  block_inspector,
+    "💾  Export Ledger":    export_ledger,
 }
 
-st.sidebar.title("🛡️ BlackWall")
+# Brand header
+st.sidebar.markdown('<div class="brand-title">🛡️ BlackWall</div>', unsafe_allow_html=True)
+st.sidebar.markdown('<div class="brand-subtitle">Security Operations Centre</div>', unsafe_allow_html=True)
+
+# ML status badge
+ml_phase = "Baselining…" if fw.ml_detector.is_baseline_phase else "Active"
+st.sidebar.markdown(
+    f'<div class="ml-badge">'
+    f'<span class="ml-badge-dot"></span> ML Detector: {ml_phase}'
+    f'</div>',
+    unsafe_allow_html=True,
+)
+st.sidebar.markdown("")
+
+# Navigation
 page = st.sidebar.radio("Navigation", list(PAGES.keys()), label_visibility="collapsed")
 
+# Stats grid
 stats = fw.get_stats()
-st.sidebar.markdown("---")
-st.sidebar.metric("Total Packets",   stats["total"])
-st.sidebar.metric("Allowed",         stats["allow"])
-st.sidebar.metric("Dropped",         stats["drop"])
-st.sidebar.metric("Auto-Banned IPs", stats["banned"])
-st.sidebar.markdown("---")
-st.sidebar.caption(f"Ledger blocks: {len(ledger)}")
+st.sidebar.markdown(f"""
+<div class="sidebar-stat-grid">
+    <div class="sidebar-stat">
+        <div class="sidebar-stat-value">{stats['total']:,}</div>
+        <div class="sidebar-stat-label">Total</div>
+    </div>
+    <div class="sidebar-stat stat-allow">
+        <div class="sidebar-stat-value">{stats['allow']:,}</div>
+        <div class="sidebar-stat-label">Allowed</div>
+    </div>
+    <div class="sidebar-stat stat-drop">
+        <div class="sidebar-stat-value">{stats['drop']:,}</div>
+        <div class="sidebar-stat-label">Dropped</div>
+    </div>
+    <div class="sidebar-stat stat-ban">
+        <div class="sidebar-stat-value">{stats['banned']:,}</div>
+        <div class="sidebar-stat-label">Banned</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+st.sidebar.markdown(
+    f'<div class="sidebar-footer">📦 {len(ledger)} ledger blocks  •  v2.1.0</div>',
+    unsafe_allow_html=True,
+)
 
 # ── Route ──────────────────────────────────────────────────────────────────────
 PAGES[page].render(fw, ledger)

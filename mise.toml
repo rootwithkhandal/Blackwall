@@ -3,16 +3,16 @@ python = "3.12"
 
 [tasks.req]
 description = "Install all packages (editable)"
-run = "pip install -e packages/core -e packages/dashboard"
+run = "pip3 install -e packages/core -e packages/dashboard"
 
 [tasks."req:core"]
 description = "Install core package only"
-run = "pip install -e packages/core"
+run = "pip3 install -e packages/core"
 
 [tasks."req:dashboard"]
 description = "Install dashboard package only"
-run = "pip install -e packages/dashboard"
+run = "pip3 install -e packages/dashboard"
 
 [tasks.run]
 description = "Run the dashboard"
-run = "streamlit run packages/dashboard/dashboard/app.py"
+run = "python3 -m streamlit run packages/dashboard/dashboard/app.py"
