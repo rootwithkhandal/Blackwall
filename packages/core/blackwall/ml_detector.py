@@ -24,10 +24,10 @@ import numpy as np
 from sklearn.ensemble import IsolationForest
 
 # ── Tunables ───────────────────────────────────────────────────────────────────
-BASELINE_DURATION = 300       # seconds of traffic collection before first fit
+BASELINE_DURATION = 30        # seconds of traffic collection before first fit
 WINDOW_SECONDS    = 10        # evaluation window length
 CONTAMINATION     = 0.05      # expected fraction of anomalous windows
-MIN_BASELINE_SAMPLES = 20    # minimum feature vectors before fitting
+MIN_BASELINE_SAMPLES = 3     # minimum feature vectors before fitting
 
 
 class _WindowBucket:

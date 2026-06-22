@@ -170,6 +170,16 @@ streamlit run packages/dashboard/dashboard/app.py
 > **Linux note:** Scapy requires root (or `CAP_NET_RAW`) for live capture.
 > Run with `sudo -E streamlit run packages/dashboard/dashboard/app.py` or grant the capability to the Python binary.
 
+### Running as a Service (Linux)
+
+To run BlackWall in the background and ensure your firewall rules survive a reboot, install the systemd service (assuming you cloned to `/opt/blackwall`):
+
+```bash
+sudo cp scripts/blackwall.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now blackwall
+```
+
 ---
 
 ## SIEM Integration
@@ -224,6 +234,8 @@ If neither `SPLUNK_HEC_URL`/`SPLUNK_HEC_TOKEN` nor `WAZUH_SOCKET_PATH` is set, t
 | Splunk HEC URL | env var `SPLUNK_HEC_URL` | _(disabled)_ |
 | Splunk HEC token | env var `SPLUNK_HEC_TOKEN` | _(disabled)_ |
 | Wazuh socket path | env var `WAZUH_SOCKET_PATH` | _(disabled)_ |
+| AbuseIPDB API key | env var `ABUSEIPDB_KEY` | _(disabled)_ |
+| Shodan API key | env var `SHODAN_KEY` | _(disabled)_ |
 
 ---
 
@@ -256,7 +268,7 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 
 - `fw_key.pem` is generated automatically on first run and stored unencrypted. Protect it like any private key — it is git-ignored.
 - The dashboard is intended for isolated homelabs. Do not expose it to the public internet without authentication.
-- iptables rules applied by the firewall persist across Streamlit restarts but not across reboots unless you save them with `iptables-save`.
+- **Firewall Persistence**: On Linux, iptables rules are automatically saved to `/etc/iptables/rules.v4`. If you run BlackWall using the provided systemd service, these rules are restored on boot.
 - SIEM credentials in `.env` should be kept out of version control (`.env` is git-ignored; only `.env.example` is committed).
 
 ---
@@ -269,7 +281,7 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 - [x] Premium dark-theme dashboard with glassmorphism and gradient accents
 - [ ] GeoIP world-map heatmap (MaxMind GeoLite2)
 - [ ] Discord / Slack webhook alerts on spike detection
-- [ ] Threat-intel feed integration (AbuseIPDB, Shodan)
+- [x] Threat-intel feed integration (AbuseIPDB, Shodan)
 - [ ] Docker image for one-command deployment
 - [ ] PCAP export of captured packets
 - [ ] Multi-user auth for the dashboard

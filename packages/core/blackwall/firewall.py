@@ -22,6 +22,8 @@ from scapy.all import IP, TCP, UDP
 from blackwall.blockchain import Blockchain
 from blackwall.ml_detector import MLDetector
 from blackwall.siem_forwarder import SIEMForwarder
+from blackwall import os_firewall
+from blackwall.threat_intel import ThreatIntel
 
 
 class Firewall:
@@ -38,6 +40,7 @@ class Firewall:
         self.banned_ips   : set[str]   = set()
         self.ml_detector  = MLDetector()
         self.siem         = SIEMForwarder()
+        self.threat_intel = ThreatIntel(data_dir=self._data_dir)
         self._stats       = {"total": 0, "allow": 0, "drop": 0, "banned": 0}
         self._lock        = threading.Lock()
         self._next_id     = 0   # monotonic rule ID counter (avoids collision after delete)
@@ -136,7 +139,7 @@ class Firewall:
         if log:
             self.ledger.add_block({"type": "rule_add", "rule": rule})
         if apply_iptables:
-            self._apply_iptables(rule, add=True)
+            os_firewall.apply_rule(rule, add=True)
         self.save_rules()
         return rule
 
@@ -152,7 +155,7 @@ class Firewall:
                 self.rules = [r for r in self.rules if r.get("id") != rule_id]
 
         if removed_rule:
-            self._apply_iptables(removed_rule, add=False)   # remove from iptables
+            os_firewall.apply_rule(removed_rule, add=False)
             self.ledger.add_block({"type": "rule_delete", "rule_id": rule_id})
             self.save_rules()
             return True
@@ -161,25 +164,6 @@ class Firewall:
     def get_rules(self) -> list[dict]:
         with self._lock:
             return list(self.rules)
-
-    # ------------------------------------------------------------------
-    # iptables integration
-    # ------------------------------------------------------------------
-
-    def _apply_iptables(self, rule: dict, add: bool = True) -> None:
-        """Add (-A) or delete (-D) a rule in the kernel iptables (Linux only)."""
-        target = "DROP" if rule["action"] == "DROP" else "ACCEPT"
-        flag   = "-A" if add else "-D"
-        cmd    = ["sudo", "iptables", flag, "INPUT"]
-        if rule.get("ip"):
-            cmd += ["-s", rule["ip"]]
-        if rule.get("port") and rule.get("proto"):
-            cmd += ["-p", rule["proto"].lower(), "--dport", str(rule["port"])]
-        cmd += ["-j", target]
-        try:
-            subprocess.run(cmd, check=False, timeout=5)
-        except (FileNotFoundError, subprocess.TimeoutExpired):
-            pass   # iptables unavailable (Windows / rootless container)
 
     # ------------------------------------------------------------------
     # Auto-ban
@@ -249,8 +233,9 @@ class Firewall:
         elif UDP in pkt:
             dport, proto = pkt[UDP].dport, "UDP"
 
-        # ML anomaly detection (replaces pure rate limiting)
+        # ML anomaly detection & Threat Intel async enrichment
         if ip_src:
+            self.threat_intel.query_async(ip_src)
             self.ml_detector.record(ip_src, pkt_bytes, dport, proto)
             if self.ml_detector.check_ip(ip_src):
                 self._ban_ip(ip_src)

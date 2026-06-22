@@ -320,14 +320,14 @@ hr {
 </style>
 """, unsafe_allow_html=True)
 
-# ── Data directory (project root / data) ───────────────────────────────────────
-_DATA_DIR = os.path.join(os.getcwd(), "data")
-os.makedirs(_DATA_DIR, exist_ok=True)
+# ── Backend Singleton ──────────────────────────────────────────────────────────
+@st.cache_resource
+def init_backend():
+    """Initialize singletons: Keys, Ledger, Firewall, and Sniffer thread."""
+    _DATA_DIR = os.path.join(os.getcwd(), "data")
+    os.makedirs(_DATA_DIR, exist_ok=True)
 
-# ── RSA keys ───────────────────────────────────────────────────────────────────
-_KEY_FILE = os.path.join(os.getcwd(), "fw_key.pem")
-
-if "keys" not in st.session_state:
+    _KEY_FILE = os.path.join(os.getcwd(), "fw_key.pem")
     if os.path.exists(_KEY_FILE):
         with open(_KEY_FILE, "rb") as _f:
             _priv = serialization.load_pem_private_key(_f.read(), password=None)
@@ -339,58 +339,48 @@ if "keys" not in st.session_state:
                 format=serialization.PrivateFormat.TraditionalOpenSSL,
                 encryption_algorithm=serialization.NoEncryption(),
             ))
-    st.session_state["keys"] = (_priv.public_key(), _priv)
 
-public_key, private_key = st.session_state["keys"]
+    ledger = Blockchain(_priv.public_key(), _priv, difficulty=2, data_dir=_DATA_DIR)
+    fw = Firewall(ledger, data_dir=_DATA_DIR)
+    pkt_queue = queue.SimpleQueue()
 
-# ── Blockchain & Firewall ──────────────────────────────────────────────────────
-if "ledger" not in st.session_state:
-    st.session_state["ledger"] = Blockchain(
-        public_key, private_key, difficulty=2, data_dir=_DATA_DIR,
-    )
-ledger: Blockchain = st.session_state["ledger"]
+    def _on_packet(pkt) -> None:
+        """Runs in background thread. Uses closure variables, NOT st.session_state."""
+        try:
+            verdict = fw.check_packet(pkt)
+            ip_src  = pkt[IP].src    if IP  in pkt else "unknown"
+            dport   = pkt[TCP].dport if TCP in pkt else (pkt[UDP].dport if UDP in pkt else None)
+            proto   = "TCP" if TCP in pkt else ("UDP" if UDP in pkt else "OTHER")
+            pkt_queue.put({
+                "src":       ip_src,
+                "port":      dport,
+                "proto":     proto,
+                "verdict":   verdict,
+                "timestamp": time.strftime("%H:%M:%S"),
+            })
+        except Exception:
+            pass # Silently drop malformed packets that don't match the layers
 
-if "fw" not in st.session_state:
-    st.session_state["fw"] = Firewall(ledger, data_dir=_DATA_DIR)
-fw: Firewall = st.session_state["fw"]
+    # Start sniffer on default active interface
+    t = threading.Thread(target=lambda: sniff(prn=_on_packet, store=0), daemon=True)
+    t.start()
 
-# ── Packet queue & buffer ──────────────────────────────────────────────────────
-if "pkt_queue" not in st.session_state:
-    st.session_state["pkt_queue"] = queue.SimpleQueue()
+    return fw, ledger, pkt_queue
 
+fw, ledger, pkt_queue = init_backend()
+
+# ── Packet buffer (main thread only) ───────────────────────────────────────────
 if "packets" not in st.session_state:
     st.session_state["packets"] = []
-
 if "rolling_allow" not in st.session_state:
     st.session_state["rolling_allow"] = deque(maxlen=100)
+if "rolling_drop" not in st.session_state:
     st.session_state["rolling_drop"]  = deque(maxlen=100)
 
-
-def _on_packet(pkt) -> None:
-    """Sniffer callback — runs in the sniffer thread. Only enqueues data."""
-    verdict = fw.check_packet(pkt)
-    ip_src  = pkt[IP].src    if IP  in pkt else "unknown"
-    dport   = pkt[TCP].dport if TCP in pkt else (pkt[UDP].dport if UDP in pkt else None)
-    proto   = "TCP" if TCP in pkt else ("UDP" if UDP in pkt else "OTHER")
-    st.session_state["pkt_queue"].put({
-        "src":       ip_src,
-        "port":      dport,
-        "proto":     proto,
-        "verdict":   verdict,
-        "timestamp": time.strftime("%H:%M:%S"),
-    })
-
-
-if "sniffer_thread" not in st.session_state:
-    _t = threading.Thread(target=lambda: sniff(prn=_on_packet, store=0), daemon=True)
-    _t.start()
-    st.session_state["sniffer_thread"] = _t
-
-# ── Drain the queue into the packet buffer (main thread only) ─────────────────
-_q: queue.SimpleQueue = st.session_state["pkt_queue"]
-while not _q.empty():
+# Drain the global thread-safe queue into the UI's session state
+while not pkt_queue.empty():
     try:
-        st.session_state["packets"].append(_q.get_nowait())
+        st.session_state["packets"].append(pkt_queue.get_nowait())
     except queue.Empty:
         break
 

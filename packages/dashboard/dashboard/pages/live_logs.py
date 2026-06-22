@@ -45,10 +45,35 @@ def render(fw, ledger) -> None:
     # ── Packet table ──────────────────────────────────────────────────────────
     st.subheader(f"Recent Packets ({min(show_last_n, len(filtered))} shown)")
     if filtered:
-        df = pd.DataFrame(filtered[:show_last_n])
+        def get_intel_badge(ip: str) -> str:
+            intel = fw.threat_intel.get(ip)
+            if not intel:
+                return ""
+            
+            abuse = intel.get("abuse_score")
+            cves = len(intel.get("cves", []))
+            
+            if (abuse is None or abuse == 0) and not cves:
+                return "🟢 Clean"
+                
+            parts = []
+            if abuse:
+                parts.append(f"{abuse}% Abuse")
+            if cves:
+                parts.append(f"{cves} CVEs")
+                
+            return "🔴 " + " | ".join(parts) if parts else "🟢 Clean"
+
+        # Apply the badge function
+        display_data = filtered[:show_last_n].copy()
+        for p in display_data:
+            p["intel"] = get_intel_badge(p["src"])
+
+        df = pd.DataFrame(display_data)
         df["icon"] = df["verdict"].map({"ALLOW": "✅", "DROP": "🛑"})
+        
         st.dataframe(
-            df[["timestamp", "src", "port", "proto", "verdict", "icon"]],
+            df[["timestamp", "src", "port", "proto", "verdict", "icon", "intel"]],
             use_container_width=True,
             hide_index=True,
             column_config={
@@ -58,6 +83,7 @@ def render(fw, ledger) -> None:
                 "proto": st.column_config.TextColumn("Protocol", width="small"),
                 "verdict": st.column_config.TextColumn("Verdict", width="small"),
                 "icon": st.column_config.TextColumn("", width="small"),
+                "intel": st.column_config.TextColumn("Threat Intel", width="medium"),
             },
         )
     else:

@@ -1,0 +1,17 @@
+[Unit]
+Description=BlackWall SOC Dashboard & Firewall
+After=network.target
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/blackwall
+# Restore persistent iptables rules before starting the app
+ExecStartPre=/bin/sh -c 'if [ -f /etc/iptables/rules.v4 ]; then /sbin/iptables-restore < /etc/iptables/rules.v4; fi'
+# Start the Streamlit dashboard
+ExecStart=/opt/blackwall/.venv/bin/streamlit run packages/dashboard/dashboard/app.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
