@@ -52,8 +52,9 @@ def render(fw, ledger) -> None:
             
             abuse = intel.get("abuse_score")
             cves = len(intel.get("cves", []))
+            vt = intel.get("vt_malicious")
             
-            if (abuse is None or abuse == 0) and not cves:
+            if (abuse is None or abuse == 0) and not cves and (vt is None or vt == 0):
                 return "🟢 Clean"
                 
             parts = []
@@ -61,6 +62,8 @@ def render(fw, ledger) -> None:
                 parts.append(f"{abuse}% Abuse")
             if cves:
                 parts.append(f"{cves} CVEs")
+            if vt:
+                parts.append(f"{vt} VT Hits")
                 
             return "🔴 " + " | ".join(parts) if parts else "🟢 Clean"
 

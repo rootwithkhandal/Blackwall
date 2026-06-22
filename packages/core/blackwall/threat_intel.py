@@ -8,6 +8,7 @@ import requests
 
 ABUSEIPDB_KEY = os.environ.get("ABUSEIPDB_KEY", "").strip()
 SHODAN_KEY    = os.environ.get("SHODAN_KEY", "").strip()
+VIRUSTOTAL_KEY = os.environ.get("VIRUSTOTAL_KEY", "").strip()
 
 class ThreatIntel:
     def __init__(self, data_dir: str):
@@ -78,6 +79,20 @@ class ThreatIntel:
                     data = res.json()
                     result["cves"] = data.get("vulns", [])
                     result["ports"] = data.get("ports", [])
+            except Exception:
+                pass
+
+        if VIRUSTOTAL_KEY:
+            try:
+                res = requests.get(
+                    f"https://www.virustotal.com/api/v3/ip_addresses/{ip}",
+                    headers={"x-apikey": VIRUSTOTAL_KEY, "Accept": "application/json"},
+                    timeout=5
+                )
+                if res.status_code == 200:
+                    stats = res.json().get("data", {}).get("attributes", {}).get("last_analysis_stats", {})
+                    malicious = stats.get("malicious", 0) + stats.get("suspicious", 0)
+                    result["vt_malicious"] = malicious
             except Exception:
                 pass
                 
