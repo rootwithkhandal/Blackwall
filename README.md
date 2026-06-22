@@ -237,6 +237,16 @@ If neither `SPLUNK_HEC_URL`/`SPLUNK_HEC_TOKEN` nor `WAZUH_SOCKET_PATH` is set, t
 | AbuseIPDB API key | env var `ABUSEIPDB_KEY` | _(disabled)_ |
 | Shodan API key | env var `SHODAN_KEY` | _(disabled)_ |
 
+### Enabling the GeoIP World Map
+
+To see a beautiful choropleth heatmap of attack origins on the Threat Stats page:
+1. Ensure the `geoip2` Python library is installed (`pip install geoip2`).
+2. Create a free account at [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
+3. Download the **GeoLite2-Country** database (MMDB format).
+4. Place the extracted `GeoLite2-Country.mmdb` file inside the `data/` directory.
+
+The dashboard will automatically detect the database and render the interactive heatmap!
+
 ---
 
 ## Development
@@ -279,7 +289,7 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 - [x] Splunk HEC / Wazuh alert forwarding
 - [x] Monorepo architecture
 - [x] Premium dark-theme dashboard with glassmorphism and gradient accents
-- [ ] GeoIP world-map heatmap (MaxMind GeoLite2)
+- [x] GeoIP world-map heatmap (MaxMind GeoLite2)
 - [ ] Discord / Slack webhook alerts on spike detection
 - [x] Threat-intel feed integration (AbuseIPDB, Shodan)
 - [ ] Docker image for one-command deployment

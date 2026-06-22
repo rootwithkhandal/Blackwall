@@ -92,3 +92,66 @@ def render(fw, ledger) -> None:
                 pd.DataFrame(top_ports, columns=["Port", "Hits"]),
                 use_container_width=True, hide_index=True,
             )
+
+    # ── GeoIP World Map Heatmap ───────────────────────────────────────────────
+    st.write("---")
+    try:
+        import os
+        import geoip2.database
+        import geoip2.errors
+        _has_geoip2 = True
+    except ImportError:
+        _has_geoip2 = False
+
+    _DB_PATH = os.path.join(os.getcwd(), "data", "GeoLite2-Country.mmdb")
+    
+    if _has_geoip2 and os.path.exists(_DB_PATH):
+        st.subheader("🌍 Attack Origins")
+        try:
+            reader = geoip2.database.Reader(_DB_PATH)
+            country_counts = Counter()
+            for p in logs:
+                if p["src"] and p["src"] != "unknown":
+                    try:
+                        resp = reader.country(p["src"])
+                        if resp.country.name:
+                            country_counts[resp.country.name] += 1
+                    except geoip2.errors.AddressNotFoundError:
+                        pass
+            
+            if country_counts:
+                df_geo = pd.DataFrame(country_counts.items(), columns=["Country", "Hits"])
+                fig_geo = px.choropleth(
+                    df_geo,
+                    locations="Country",
+                    locationmode="country names",
+                    color="Hits",
+                    color_continuous_scale=[[0, "#2D1B69"], [0.5, "#7C6AFF"], [1, "#F87171"]],
+                    template="plotly_dark"
+                )
+                fig_geo.update_layout(
+                    paper_bgcolor=_CHART_BG, plot_bgcolor=_CHART_BG,
+                    margin=dict(l=0, r=0, t=30, b=0),
+                    height=500,
+                    geo=dict(
+                        bgcolor="rgba(0,0,0,0)",
+                        showcoastlines=True, coastlinecolor="rgba(124, 106, 255, 0.2)",
+                        showframe=False,
+                        projection_type="equirectangular",
+                        landcolor="rgba(255, 255, 255, 0.02)",
+                    ),
+                    coloraxis_colorbar=dict(title="Hits", x=0.95)
+                )
+                st.plotly_chart(fig_geo, use_container_width=True)
+            else:
+                st.info("No external IP data mapped yet.")
+        except Exception as e:
+            st.error(f"Error reading GeoIP database: {e}")
+    else:
+        st.info(
+            "🌍 **GeoIP Map Disabled**\n\n"
+            "To enable the world-map heatmap:\n"
+            "1. Run `pip install geoip2` (or `mise run req`)\n"
+            "2. Download the free [MaxMind GeoLite2-Country database](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data)\n"
+            "3. Place `GeoLite2-Country.mmdb` inside the `data/` directory."
+        )

@@ -14,6 +14,7 @@ dependencies = [
     "streamlit-autorefresh>=0.1.0",
     "plotly>=5.22.0",
     "pandas>=2.2.0",
+    "geoip2>=4.8.0",
 ]
 
 [tool.hatch.build.targets.wheel]
