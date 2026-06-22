@@ -11,6 +11,11 @@ build/
 .eggs/
 pip-wheel-metadata/
 
+# ── Monorepo packages ─────────────────────────────────────────────────────────
+packages/*/dist/
+packages/*/*.egg-info/
+packages/*/build/
+
 # ── Virtual environments ───────────────────────────────────────────────────────
 .venv/
 venv/
@@ -21,7 +26,7 @@ blackwall-env/
 
 # ── Environment / secrets ──────────────────────────────────────────────────────
 .env
-.env.*
+!.env.example
 *.pem          # RSA private key — never commit fw_key.pem
 *.key
 *.p12
@@ -55,3 +60,7 @@ temp/
 .coverage
 htmlcov/
 .tox/
+
+# ── BlackWall runtime files ───────────────────────────────────────────────────
+*.pem
+data/

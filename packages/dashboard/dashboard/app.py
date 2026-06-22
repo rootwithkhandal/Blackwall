@@ -15,7 +15,6 @@ Thread-safety note:
 
 import os
 import queue
-import sys
 import threading
 import time
 from collections import deque
@@ -25,11 +24,9 @@ from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives import serialization
 from scapy.all import sniff, IP, TCP, UDP
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
 from blackwall.blockchain import Blockchain
 from blackwall.firewall   import Firewall
-from blackwall.pages      import (
+from dashboard.pages      import (
     live_logs, threat_stats, manage_rules,
     banned_ips, ledger_integrity, block_inspector, export_ledger,
 )
@@ -42,8 +39,12 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
+# ── Data directory (project root / data) ───────────────────────────────────────
+_DATA_DIR = os.path.join(os.getcwd(), "data")
+os.makedirs(_DATA_DIR, exist_ok=True)
+
 # ── RSA keys ───────────────────────────────────────────────────────────────────
-_KEY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fw_key.pem")
+_KEY_FILE = os.path.join(os.getcwd(), "fw_key.pem")
 
 if "keys" not in st.session_state:
     if os.path.exists(_KEY_FILE):
@@ -63,11 +64,13 @@ public_key, private_key = st.session_state["keys"]
 
 # ── Blockchain & Firewall ──────────────────────────────────────────────────────
 if "ledger" not in st.session_state:
-    st.session_state["ledger"] = Blockchain(public_key, private_key, difficulty=2)
+    st.session_state["ledger"] = Blockchain(
+        public_key, private_key, difficulty=2, data_dir=_DATA_DIR,
+    )
 ledger: Blockchain = st.session_state["ledger"]
 
 if "fw" not in st.session_state:
-    st.session_state["fw"] = Firewall(ledger)
+    st.session_state["fw"] = Firewall(ledger, data_dir=_DATA_DIR)
 fw: Firewall = st.session_state["fw"]
 
 # ── Packet queue & buffer ──────────────────────────────────────────────────────

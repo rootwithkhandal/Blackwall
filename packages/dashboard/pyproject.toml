@@ -1,0 +1,17 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "blackwall-dashboard"
+version = "2.1.0"
+description = "Streamlit dashboard for BlackWall firewall."
+requires-python = ">=3.11"
+license = {text = "MIT"}
+dependencies = [
+    "blackwall>=2.1.0",
+    "streamlit>=1.35.0",
+    "streamlit-autorefresh>=0.1.0",
+    "plotly>=5.22.0",
+    "pandas>=2.2.0",
+]

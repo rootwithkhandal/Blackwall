@@ -13,10 +13,11 @@ source "$VENV_DIR/bin/activate"
 
 echo "[*] Installing dependencies"
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -e packages/core
+pip install -e packages/dashboard
 
 echo ""
 echo "[✓] Installation complete."
 echo "    To start BlackWall:"
 echo "      source $VENV_DIR/bin/activate"
-echo "      sudo -E streamlit run app.py"
+echo "      sudo -E streamlit run packages/dashboard/dashboard/app.py"

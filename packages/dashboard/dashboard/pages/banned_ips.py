@@ -30,7 +30,7 @@ def render(fw, ledger) -> None:
 
     st.markdown("---")
     st.caption(
-        f"IPs are auto-banned when they exceed "
-        f"{fw.rate_limiter.threshold} packets / {fw.rate_limiter.window}s. "
-        f"Bans persist across restarts."
+        "IPs are auto-banned when the ML anomaly detector (IsolationForest) "
+        "flags their traffic pattern as anomalous. "
+        "Bans persist across restarts."
     )

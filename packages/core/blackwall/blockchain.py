@@ -16,11 +16,15 @@ import time
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives import hashes
 
-# Project root is two levels up from this file (blackwall/blockchain.py)
-_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 # Block types that warrant proof-of-work
 _POW_TYPES = {"genesis", "rule_add", "rule_delete"}
+
+
+def _default_data_dir() -> str:
+    """Resolve the default data directory (cwd-relative)."""
+    d = os.path.join(os.getcwd(), "data")
+    os.makedirs(d, exist_ok=True)
+    return d
 
 
 class Block:
@@ -124,6 +128,7 @@ class Blockchain:
         private_key=None,
         ledger_file: str | None = None,
         difficulty: int = 2,
+        data_dir: str | None = None,
     ):
         self.chain       : list[Block] = []
         self.public_key  = public_key
@@ -131,11 +136,12 @@ class Blockchain:
         self.difficulty  = difficulty
         self._lock       = threading.Lock()   # serialise concurrent add_block calls
 
-        # Default ledger lives in <project_root>/data/ledger.json
+        # Resolve data directory (location-agnostic)
+        self._data_dir = data_dir or _default_data_dir()
+        os.makedirs(self._data_dir, exist_ok=True)
+
         if ledger_file is None:
-            data_dir = os.path.join(_ROOT, "data")
-            os.makedirs(data_dir, exist_ok=True)
-            ledger_file = os.path.join(data_dir, "ledger.json")
+            ledger_file = os.path.join(self._data_dir, "ledger.json")
         self.ledger_file = ledger_file
 
         self.load()
@@ -191,7 +197,7 @@ class Blockchain:
     def export_json(self, path: str | None = None) -> str:
         """Export the full chain to a pretty-printed JSON file."""
         if path is None:
-            path = os.path.join(_ROOT, "data", "ledger_export.json")
+            path = os.path.join(self._data_dir, "ledger_export.json")
         os.makedirs(os.path.dirname(path), exist_ok=True)
         with self._lock:
             chain_copy = [b.to_dict() for b in self.chain]

@@ -4,7 +4,8 @@ firewall.py — Core firewall engine.
 
 Responsibilities:
   - Rule management (add / delete / persist)
-  - Per-IP sliding-window rate limiting
+  - ML-based anomaly detection (IsolationForest)
+  - SIEM alert forwarding (Splunk HEC / Wazuh)
   - Automatic IP banning (with persistence across restarts)
   - iptables integration (Linux; silently skipped on Windows/containers)
   - Packet verdict evaluation
@@ -19,53 +20,24 @@ import threading
 from collections import defaultdict
 from scapy.all import IP, TCP, UDP
 from blackwall.blockchain import Blockchain
-
-# ── Paths ──────────────────────────────────────────────────────────────────────
-_ROOT      = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-_DATA_DIR  = os.path.join(_ROOT, "data")
-RULES_FILE = os.path.join(_DATA_DIR, "rules.json")
-BANS_FILE  = os.path.join(_DATA_DIR, "banned_ips.json")
-
-# ── Rate-limit defaults ────────────────────────────────────────────────────────
-RATE_LIMIT_THRESHOLD = 100   # packets per window before auto-ban
-RATE_LIMIT_WINDOW    = 10    # seconds
-
-
-class RateLimiter:
-    """Sliding-window per-IP packet counter."""
-
-    def __init__(
-        self,
-        threshold: int = RATE_LIMIT_THRESHOLD,
-        window: int    = RATE_LIMIT_WINDOW,
-    ):
-        self.threshold = threshold
-        self.window    = window
-        self._hits: dict[str, list[float]] = defaultdict(list)
-        self._lock = threading.Lock()
-
-    def record(self, ip: str) -> bool:
-        """Record a packet hit. Returns True when the rate limit is exceeded."""
-        now    = time.time()
-        cutoff = now - self.window
-        with self._lock:
-            self._hits[ip] = [t for t in self._hits[ip] if t > cutoff]
-            self._hits[ip].append(now)
-            return len(self._hits[ip]) > self.threshold
-
-    def reset(self, ip: str) -> None:
-        with self._lock:
-            self._hits.pop(ip, None)
+from blackwall.ml_detector import MLDetector
+from blackwall.siem_forwarder import SIEMForwarder
 
 
 class Firewall:
-    def __init__(self, ledger: Blockchain):
-        os.makedirs(_DATA_DIR, exist_ok=True)
+    def __init__(self, ledger: Blockchain, data_dir: str | None = None):
+        # Resolve data directory (location-agnostic)
+        self._data_dir = data_dir or os.path.join(os.getcwd(), "data")
+        os.makedirs(self._data_dir, exist_ok=True)
+
+        self._rules_file = os.path.join(self._data_dir, "rules.json")
+        self._bans_file  = os.path.join(self._data_dir, "banned_ips.json")
 
         self.ledger       = ledger
         self.rules        : list[dict] = []
         self.banned_ips   : set[str]   = set()
-        self.rate_limiter = RateLimiter()
+        self.ml_detector  = MLDetector()
+        self.siem         = SIEMForwarder()
         self._stats       = {"total": 0, "allow": 0, "drop": 0, "banned": 0}
         self._lock        = threading.Lock()
         self._next_id     = 0   # monotonic rule ID counter (avoids collision after delete)
@@ -79,10 +51,10 @@ class Firewall:
 
     def load_rules(self) -> None:
         """Load rules from disk without triggering iptables or ledger writes."""
-        if not os.path.exists(RULES_FILE):
+        if not os.path.exists(self._rules_file):
             return
         try:
-            with open(RULES_FILE, "r") as f:
+            with open(self._rules_file, "r") as f:
                 data = json.load(f)
             for r in data:
                 self.add_rule(
@@ -101,10 +73,10 @@ class Firewall:
 
     def save_rules(self) -> None:
         """Persist the current rule list atomically."""
-        tmp = RULES_FILE + ".tmp"
+        tmp = self._rules_file + ".tmp"
         with open(tmp, "w") as f:
             json.dump(self.rules, f, indent=2)
-        os.replace(tmp, RULES_FILE)
+        os.replace(tmp, self._rules_file)
 
     # ------------------------------------------------------------------
     # Persistence — banned IPs
@@ -112,10 +84,10 @@ class Firewall:
 
     def _load_bans(self) -> None:
         """Restore banned IPs from disk so bans survive restarts."""
-        if not os.path.exists(BANS_FILE):
+        if not os.path.exists(self._bans_file):
             return
         try:
-            with open(BANS_FILE, "r") as f:
+            with open(self._bans_file, "r") as f:
                 bans = json.load(f)
             self.banned_ips = set(bans)
             with self._lock:
@@ -124,10 +96,10 @@ class Firewall:
             self.banned_ips = set()
 
     def _save_bans(self) -> None:
-        tmp = BANS_FILE + ".tmp"
+        tmp = self._bans_file + ".tmp"
         with open(tmp, "w") as f:
             json.dump(sorted(self.banned_ips), f, indent=2)
-        os.replace(tmp, BANS_FILE)
+        os.replace(tmp, self._bans_file)
 
     # ------------------------------------------------------------------
     # Rule management
@@ -214,7 +186,7 @@ class Firewall:
     # ------------------------------------------------------------------
 
     def _ban_ip(self, ip: str) -> None:
-        """Auto-ban an IP that exceeded the rate limit."""
+        """Auto-ban an IP flagged as anomalous by the ML detector."""
         if ip in self.banned_ips:
             return
         self.banned_ips.add(ip)
@@ -224,13 +196,20 @@ class Firewall:
         self.add_rule(
             action  = "DROP",
             ip      = ip,
-            comment = f"auto-ban: rate limit exceeded at {time.strftime('%H:%M:%S')}",
+            comment = f"auto-ban: ML anomaly detected at {time.strftime('%H:%M:%S')}",
         )
-        print(f"[fw] AUTO-BAN {ip}")
+        print(f"[fw] AUTO-BAN {ip} (ML anomaly)")
+
+        # Forward ban event to SIEM
+        self.siem.forward({
+            "type":   "auto_ban",
+            "ip":     ip,
+            "reason": "ML anomaly detection (IsolationForest)",
+        })
 
     def unban_ip(self, ip: str) -> bool:
         """
-        Remove an IP from the ban list, reset its rate-limiter bucket,
+        Remove an IP from the ban list, reset its ML detector state,
         and delete the corresponding auto-ban DROP rule.
         Returns True if the IP was actually banned.
         """
@@ -238,7 +217,7 @@ class Firewall:
             return False
 
         self.banned_ips.discard(ip)
-        self.rate_limiter.reset(ip)
+        self.ml_detector.reset(ip)
         with self._lock:
             self._stats["banned"] = max(0, self._stats["banned"] - 1)
 
@@ -261,6 +240,7 @@ class Firewall:
     def check_packet(self, pkt) -> str:
         """Evaluate a Scapy packet. Returns 'ALLOW' or 'DROP'."""
         ip_src, dport, proto = None, None, None
+        pkt_bytes = len(pkt)
 
         if IP in pkt:
             ip_src = pkt[IP].src
@@ -269,9 +249,11 @@ class Firewall:
         elif UDP in pkt:
             dport, proto = pkt[UDP].dport, "UDP"
 
-        # Rate-limit check (only for known IPs)
-        if ip_src and self.rate_limiter.record(ip_src):
-            self._ban_ip(ip_src)
+        # ML anomaly detection (replaces pure rate limiting)
+        if ip_src:
+            self.ml_detector.record(ip_src, pkt_bytes, dport, proto)
+            if self.ml_detector.check_ip(ip_src):
+                self._ban_ip(ip_src)
 
         verdict = "DROP" if ip_src in self.banned_ips else self._match_rules(ip_src, dport, proto)
 
@@ -289,6 +271,16 @@ class Firewall:
             "proto":   proto,
             "verdict": verdict,
         })
+
+        # Forward DROP events to SIEM
+        if verdict == "DROP":
+            self.siem.forward({
+                "type":  "drop",
+                "src":   ip_src,
+                "dport": dport,
+                "proto": proto,
+            })
+
         return verdict
 
     def _match_rules(self, ip_src, dport, proto) -> str:
