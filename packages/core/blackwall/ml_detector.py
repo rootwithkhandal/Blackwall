@@ -81,6 +81,11 @@ class MLDetector:
         window_seconds: int    = WINDOW_SECONDS,
         contamination: float   = CONTAMINATION,
     ):
+        import os
+        if os.environ.get("BLACKWALL_SIMULATE") == "1":
+            baseline_duration = 5
+            window_seconds = 2
+            
         self._baseline_duration = baseline_duration
         self._window            = window_seconds
         self._contamination     = contamination

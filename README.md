@@ -153,6 +153,23 @@ pip3 install -r requirements.txt
 streamlit run app.py
 ```
 
+### Attack Simulation Mode
+
+For demos, CTFs, or job interviews, you can launch BlackWall in simulation mode. This creates a background thread that automatically generates synthetic attacks (SYN floods, Port scans, Slow loris, and DNS exfiltration) against `127.0.0.1` so you can instantly see the dashboard, ML anomaly detector, and Threat Intel features in action.
+
+```bash
+streamlit run app.py -- --simulate
+```
+*Note: Simulation mode truncates the ML baseline duration from 5 minutes to 5 seconds so auto-bans occur almost immediately.*
+
+### Multi-User Authentication
+On the first run, BlackWall automatically generates a `data/auth_config.yaml` file to secure the dashboard with `streamlit-authenticator`.
+The default credentials are:
+- **Admin**: `admin` / `admin123`
+- **Demo User**: `demo` / `demo123`
+
+You can change these passwords or add new users by editing the `data/auth_config.yaml` file.
+
 ### Manual Setup
 
 ```bash
@@ -214,6 +231,15 @@ export WAZUH_SOCKET_PATH=/var/ossec/queue/sockets/queue
 ```
 
 Events are written as JSON lines to the Wazuh agent Unix domain socket in the format `1:blackwall:{json}`.
+
+### REST API
+
+BlackWall automatically runs a FastAPI server concurrently with the dashboard on port `8000` (no extra setup required). You can use this to pull data into n8n, Tines, Slack bots, or other SOC automation tools:
+
+- `GET http://localhost:8000/rules` - Returns all active firewall rules.
+- `GET http://localhost:8000/banned` - Returns a list of auto-banned IPs.
+- `GET http://localhost:8000/stats` - Returns live traffic metrics.
+- `GET http://localhost:8000/ledger?limit=50` - Returns the immutable blockchain log.
 
 ### Disabling
 

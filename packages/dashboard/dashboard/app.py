@@ -15,6 +15,7 @@ Thread-safety note:
 
 import os
 import queue
+import sys
 import threading
 import time
 from collections import deque
@@ -365,9 +366,33 @@ def init_backend():
     t = threading.Thread(target=lambda: sniff(prn=_on_packet, store=0), daemon=True)
     t.start()
 
+    # Start FastAPI REST server for SOC integration
+    try:
+        from blackwall.api import start_api_server
+        start_api_server(fw, ledger, port=8000)
+        with open("api_error.log", "a") as f:
+            f.write("start_api_server successfully called\n")
+    except Exception as e:
+        with open("api_error.log", "a") as f:
+            import traceback
+            f.write(f"FATAL: {e}\n{traceback.format_exc()}\n")
+
     return fw, ledger, pkt_queue
 
+# Check for simulate flag
+IS_SIMULATION = "--simulate" in sys.argv
+
+if IS_SIMULATION:
+    # Shorten ML baseline for faster demo
+    os.environ["BLACKWALL_SIMULATE"] = "1"
+
 fw, ledger, pkt_queue = init_backend()
+
+if IS_SIMULATION:
+    if "simulator" not in st.session_state:
+        from blackwall.simulator import AttackSimulator
+        st.session_state["simulator"] = AttackSimulator()
+        st.session_state["simulator"].start()
 
 # ── Packet buffer (main thread only) ───────────────────────────────────────────
 if "packets" not in st.session_state:
@@ -388,61 +413,124 @@ while not pkt_queue.empty():
 if len(st.session_state["packets"]) > 5000:
     st.session_state["packets"] = st.session_state["packets"][-2000:]
 
-# ── Sidebar ────────────────────────────────────────────────────────────────────
-PAGES = {
-    "🖥️  Live Logs":        live_logs,
-    "📊  Threat Stats":     threat_stats,
-    "📋  Manage Rules":     manage_rules,
-    "🚫  Banned IPs":       banned_ips,
-    "🔒  Ledger Integrity": ledger_integrity,
-    "🔍  Block Inspector":  block_inspector,
-    "💾  Export Ledger":    export_ledger,
-}
+import yaml
+from yaml.loader import SafeLoader
 
-# Brand header
-st.sidebar.markdown('<div class="brand-title">🛡️ BlackWall</div>', unsafe_allow_html=True)
-st.sidebar.markdown('<div class="brand-subtitle">Security Operations Centre</div>', unsafe_allow_html=True)
+auth_config_path = os.path.join(os.getcwd(), "data", "auth_config.yaml")
 
-# ML status badge
-ml_phase = "Baselining…" if fw.ml_detector.is_baseline_phase else "Active"
-st.sidebar.markdown(
-    f'<div class="ml-badge">'
-    f'<span class="ml-badge-dot"></span> ML Detector: {ml_phase}'
-    f'</div>',
-    unsafe_allow_html=True,
-)
-st.sidebar.markdown("")
+# Auto-generate default credentials if missing
+if not os.path.exists(auth_config_path):
+    import streamlit_authenticator as stauth
+    default_config = {
+        'credentials': {
+            'usernames': {
+                'admin': {
+                    'email': 'admin@blackwall.local',
+                    'name': 'Administrator',
+                    'password': stauth.Hasher(['admin123']).generate()[0]
+                },
+                'demo': {
+                    'email': 'demo@blackwall.local',
+                    'name': 'Demo User',
+                    'password': stauth.Hasher(['demo123']).generate()[0]
+                }
+            }
+        },
+        'cookie': {
+            'expiry_days': 1,
+            'key': 'blackwall_auth_signature',
+            'name': 'blackwall_auth_cookie'
+        },
+        'preauthorized': {
+            'emails': []
+        }
+    }
+    with open(auth_config_path, 'w') as f:
+        yaml.dump(default_config, f, default_flow_style=False)
 
-# Navigation
-page = st.sidebar.radio("Navigation", list(PAGES.keys()), label_visibility="collapsed")
+with open(auth_config_path) as file:
+    auth_config = yaml.load(file, Loader=SafeLoader)
 
-# Stats grid
-stats = fw.get_stats()
-st.sidebar.markdown(f"""
-<div class="sidebar-stat-grid">
-    <div class="sidebar-stat">
-        <div class="sidebar-stat-value">{stats['total']:,}</div>
-        <div class="sidebar-stat-label">Total</div>
-    </div>
-    <div class="sidebar-stat stat-allow">
-        <div class="sidebar-stat-value">{stats['allow']:,}</div>
-        <div class="sidebar-stat-label">Allowed</div>
-    </div>
-    <div class="sidebar-stat stat-drop">
-        <div class="sidebar-stat-value">{stats['drop']:,}</div>
-        <div class="sidebar-stat-label">Dropped</div>
-    </div>
-    <div class="sidebar-stat stat-ban">
-        <div class="sidebar-stat-value">{stats['banned']:,}</div>
-        <div class="sidebar-stat-label">Banned</div>
-    </div>
-</div>
-""", unsafe_allow_html=True)
-
-st.sidebar.markdown(
-    f'<div class="sidebar-footer">📦 {len(ledger)} ledger blocks  •  v2.1.0</div>',
-    unsafe_allow_html=True,
+import streamlit_authenticator as stauth
+authenticator = stauth.Authenticate(
+    auth_config['credentials'],
+    auth_config['cookie']['name'],
+    auth_config['cookie']['key'],
+    auth_config['cookie']['expiry_days'],
+    auth_config['preauthorized']
 )
 
-# ── Route ──────────────────────────────────────────────────────────────────────
-PAGES[page].render(fw, ledger)
+try:
+    authenticator.login()
+except Exception as e:
+    st.error(e)
+
+if st.session_state.get("authentication_status"):
+    # ── Sidebar ────────────────────────────────────────────────────────────────────
+    PAGES = {
+        "🖥️  Live Logs":        live_logs,
+        "📊  Threat Stats":     threat_stats,
+        "📋  Manage Rules":     manage_rules,
+        "🚫  Banned IPs":       banned_ips,
+        "🔒  Ledger Integrity": ledger_integrity,
+        "🔍  Block Inspector":  block_inspector,
+        "💾  Export Ledger":    export_ledger,
+    }
+
+    # Brand header
+    st.sidebar.markdown('<div class="brand-title">🛡️ BlackWall</div>', unsafe_allow_html=True)
+    st.sidebar.markdown('<div class="brand-subtitle">Security Operations Centre</div>', unsafe_allow_html=True)
+    
+    st.sidebar.markdown(f"**Welcome, {st.session_state['name']}**")
+    authenticator.logout('Logout', 'sidebar')
+
+    if IS_SIMULATION:
+        st.sidebar.error("🚨 **SIMULATION MODE ACTIVE**", icon="🚨")
+
+    # ML status badge
+    ml_phase = "Baselining…" if fw.ml_detector.is_baseline_phase else "Active"
+    st.sidebar.markdown(
+        f'<div class="ml-badge">'
+        f'<span class="ml-badge-dot"></span> ML Detector: {ml_phase}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    st.sidebar.markdown("")
+
+    # Navigation
+    page = st.sidebar.radio("Navigation", list(PAGES.keys()), label_visibility="collapsed")
+
+    # Stats grid
+    stats = fw.get_stats()
+    st.sidebar.markdown(f"""
+    <div class="sidebar-stat-grid">
+        <div class="sidebar-stat">
+            <div class="sidebar-stat-value">{stats['total']:,}</div>
+            <div class="sidebar-stat-label">Total</div>
+        </div>
+        <div class="sidebar-stat stat-allow">
+            <div class="sidebar-stat-value">{stats['allow']:,}</div>
+            <div class="sidebar-stat-label">Allowed</div>
+        </div>
+        <div class="sidebar-stat stat-drop">
+            <div class="sidebar-stat-value">{stats['drop']:,}</div>
+            <div class="sidebar-stat-label">Dropped</div>
+        </div>
+        <div class="sidebar-stat stat-ban">
+            <div class="sidebar-stat-value">{stats['banned']:,}</div>
+            <div class="sidebar-stat-label">Banned</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.sidebar.markdown(
+        f'<div class="sidebar-footer">📦 {len(ledger)} ledger blocks  •  v2.1.0</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Route ──────────────────────────────────────────────────────────────────────
+    PAGES[page].render(fw, ledger)
+elif st.session_state.get("authentication_status") is False:
+    st.error("Username/password is incorrect")
+elif st.session_state.get("authentication_status") is None:
+    st.warning("Please enter your username and password to access the SOC Dashboard.")
