@@ -17,8 +17,8 @@ import os
 import subprocess
 import time
 import threading
-from collections import defaultdict
-from scapy.all import IP, TCP, UDP
+from collections import defaultdict, deque
+from scapy.all import IP, TCP, UDP, wrpcap
 from blackwall.blockchain import Blockchain
 from blackwall.ml_detector import MLDetector
 from blackwall.siem_forwarder import SIEMForwarder
@@ -34,10 +34,13 @@ class Firewall:
 
         self._rules_file = os.path.join(self._data_dir, "rules.json")
         self._bans_file  = os.path.join(self._data_dir, "banned_ips.json")
+        self._pcaps_dir  = os.path.join(self._data_dir, "pcaps")
+        os.makedirs(self._pcaps_dir, exist_ok=True)
 
         self.ledger       = ledger
         self.rules        : list[dict] = []
         self.banned_ips   : set[str]   = set()
+        self._pcap_buffer = defaultdict(lambda: deque(maxlen=100))
         self.ml_detector  = MLDetector()
         self.siem         = SIEMForwarder()
         self.threat_intel = ThreatIntel(data_dir=self._data_dir)
@@ -117,6 +120,7 @@ class Firewall:
         comment       : str        = "",
         log           : bool       = True,
         apply_iptables: bool       = True,
+        pcap_file     : str | None = None,
     ) -> dict:
         """Add a firewall rule. Returns the created rule dict."""
         with self._lock:
@@ -130,6 +134,7 @@ class Firewall:
             "port":    int(port) if port is not None else None,
             "proto":   proto.upper() if proto else None,
             "comment": comment,
+            "pcap_file": pcap_file,
             "created": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
 
@@ -177,18 +182,33 @@ class Firewall:
         with self._lock:
             self._stats["banned"] += 1
         self._save_bans()
+        
+        # Export forensic PCAP
+        pcap_path = None
+        if self._pcap_buffer[ip]:
+            filename = f"ban_{ip.replace('.', '_')}_{int(time.time())}.pcap"
+            pcap_path = os.path.join(self._pcaps_dir, filename)
+            try:
+                wrpcap(pcap_path, list(self._pcap_buffer[ip]))
+            except Exception as e:
+                print(f"[fw] PCAP export failed: {e}")
+                pcap_path = None
+            del self._pcap_buffer[ip]
+
         self.add_rule(
-            action  = "DROP",
-            ip      = ip,
-            comment = f"auto-ban: ML anomaly detected at {time.strftime('%H:%M:%S')}",
+            action    = "DROP",
+            ip        = ip,
+            comment   = f"auto-ban: ML anomaly detected at {time.strftime('%H:%M:%S')}",
+            pcap_file = pcap_path,
         )
         print(f"[fw] AUTO-BAN {ip} (ML anomaly)")
 
         # Forward ban event to SIEM
         self.siem.forward({
-            "type":   "auto_ban",
-            "ip":     ip,
-            "reason": "ML anomaly detection (IsolationForest)",
+            "type":      "auto_ban",
+            "ip":        ip,
+            "reason":    "ML anomaly detection (IsolationForest)",
+            "pcap_file": pcap_path,
         })
 
     def unban_ip(self, ip: str) -> bool:
@@ -235,6 +255,7 @@ class Firewall:
 
         # ML anomaly detection & Threat Intel async enrichment
         if ip_src:
+            self._pcap_buffer[ip_src].append(pkt)
             self.threat_intel.query_async(ip_src)
             self.ml_detector.record(ip_src, pkt_bytes, dport, proto)
             if self.ml_detector.check_ip(ip_src):

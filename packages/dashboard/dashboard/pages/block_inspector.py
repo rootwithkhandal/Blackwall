@@ -46,6 +46,31 @@ def render(fw, ledger) -> None:
     if blk_dict["signature"]:
         st.text_area("🔐 Signature (hex)", blk_dict["signature"], height=80, disabled=True)
 
+    # ── Forensic PCAP ─────────────────────────────────────────────────────────
+    pcap_path = blk_dict["data"].get("rule", {}).get("pcap_file")
+    if pcap_path:
+        import os
+        st.write("---")
+        st.subheader("🕵️ Forensic Evidence")
+        if os.path.exists(pcap_path):
+            try:
+                with open(pcap_path, "rb") as f:
+                    pcap_data = f.read()
+                st.download_button(
+                    label="📥 Download Flow PCAP",
+                    data=pcap_data,
+                    file_name=os.path.basename(pcap_path),
+                    mime="application/vnd.tcpdump.pcap",
+                    type="primary",
+                )
+                st.caption(f"Raw packets captured leading up to this auto-ban. File: `{os.path.basename(pcap_path)}`")
+            except Exception as e:
+                st.error(f"Failed to read PCAP file: {e}")
+        else:
+            st.warning("⚠️ PCAP file not found on disk. It may have been deleted.")
+
+    st.write("---")
+
     if st.button("✅ Verify Signature", type="primary"):
         public_key = st.session_state["keys"][0]
         if blk.verify(public_key):

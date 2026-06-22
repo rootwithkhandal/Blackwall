@@ -83,6 +83,7 @@ Python 3.11+ recommended.
 - Browse any block by index
 - View index, timestamp, nonce, signer, hash, prev-hash, data, and signature
 - One-click signature verification
+- **Forensic PCAP Download**: Instantly download the raw packets that triggered an auto-ban directly from the blockchain log.
 
 ### 💾 Export Ledger
 - Download the full blockchain as a pretty-printed JSON file
@@ -293,7 +294,7 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 - [ ] Discord / Slack webhook alerts on spike detection
 - [x] Threat-intel feed integration (AbuseIPDB, Shodan)
 - [ ] Docker image for one-command deployment
-- [ ] PCAP export of captured packets
+- [x] PCAP export of captured packets
 - [ ] Multi-user auth for the dashboard
 
 ---
