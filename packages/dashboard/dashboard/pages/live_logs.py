@@ -8,6 +8,8 @@ import plotly.graph_objects as go
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
+import time
+
 # Configurable alert threshold (drops per 10-packet window)
 DROP_THRESHOLD = 15
 
@@ -77,7 +79,7 @@ def render(fw, ledger) -> None:
         
         st.dataframe(
             df[["timestamp", "src", "port", "proto", "verdict", "icon", "intel"]],
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             column_config={
                 "timestamp": st.column_config.TextColumn("Time", width="small"),
@@ -121,11 +123,17 @@ def render(fw, ledger) -> None:
         xaxis=dict(gridcolor=_CHART_GRID, showgrid=True),
         yaxis=dict(gridcolor=_CHART_GRID, showgrid=True),
     )
-    st.plotly_chart(fig_trend, use_container_width=True)
+    st.plotly_chart(fig_trend, width="stretch")
 
     # ── Attack spike alert ────────────────────────────────────────────────────
     if count_drop >= DROP_THRESHOLD:
         st.error(f"🚨 **High DROP rate!** {count_drop} drops in the last 10 packets.")
+        
+        # Webhook alert with 60-second cooldown
+        last_alert = st.session_state.get("last_spike_alert", 0)
+        if time.time() - last_alert > 60:
+            fw.siem.forward_webhook(f"🚨 **BlackWall Alert** 🚨\nHigh DROP rate detected: {count_drop} drops in the last 10 packets.")
+            st.session_state["last_spike_alert"] = time.time()
     else:
         st.success(f"✅ DROP rate normal — {count_drop} in last 10 packets.")
 
@@ -148,6 +156,6 @@ def render(fw, ledger) -> None:
             yaxis=dict(gridcolor=_CHART_GRID),
             coloraxis_showscale=False,
         )
-        st.plotly_chart(fig, use_container_width=True)
+        st.plotly_chart(fig, width="stretch")
     else:
         st.info("No IP data yet.")

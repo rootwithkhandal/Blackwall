@@ -175,6 +175,17 @@ streamlit run app.py -- --simulate
 ```
 *Note: Simulation mode truncates the ML baseline duration from 5 minutes to 5 seconds so auto-bans occur almost immediately.*
 
+### Testing with Real Traffic (Ping Flood)
+Alternatively, you can test the ML Anomaly detector using live network traffic. Start the BlackWall dashboard normally, wait 5 minutes for the IsolationForest ML baseline to finish, and then execute a continuous ping flood from another terminal:
+```bash
+# Windows
+ping 8.8.8.8 -t
+
+# Linux / macOS
+ping 8.8.8.8
+```
+Within a few seconds, the spike in packet rates will trigger the ML anomaly detector and you'll see your IP automatically banned on the dashboard!
+
 ### Multi-User Authentication
 On the first run, BlackWall automatically generates a `data/auth_config.yaml` file to secure the dashboard with `streamlit-authenticator`.
 The default credentials are:
@@ -215,7 +226,16 @@ sudo systemctl enable --now blackwall
 
 ## SIEM Integration
 
-BlackWall can forward every DROP and auto-BAN event to your SOC stack. Configure via environment variables or a `.env` file (copy from `.env.example`):
+BlackWall can forward every DROP and auto-BAN event to your SOC stack, as well as trigger instant alerts for traffic spikes. Configure via environment variables or a `.env` file (copy from `.env.example`):
+
+### Discord / Slack Webhook Alerts
+
+To receive instant notifications when the dashboard detects a massive traffic spike or attack:
+
+```bash
+export WEBHOOK_URL=https://discord.com/api/webhooks/...
+```
+BlackWall automatically formats the alert properly for either Discord or Slack. Ensure your Slack webhook is compatible, or simply append `/slack` to the end of a Discord webhook URL if required.
 
 ### Splunk HEC
 

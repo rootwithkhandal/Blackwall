@@ -26,6 +26,7 @@ import requests
 SPLUNK_HEC_URL   = os.environ.get("SPLUNK_HEC_URL", "").strip()
 SPLUNK_HEC_TOKEN = os.environ.get("SPLUNK_HEC_TOKEN", "").strip()
 WAZUH_SOCKET_PATH = os.environ.get("WAZUH_SOCKET_PATH", "").strip()
+WEBHOOK_URL       = os.environ.get("WEBHOOK_URL", "").strip()
 
 # Retry / backoff
 _MAX_RETRIES  = 3
@@ -55,10 +56,11 @@ class SIEMForwarder:
         self._splunk_url   = splunk_url or SPLUNK_HEC_URL
         self._splunk_token = splunk_token or SPLUNK_HEC_TOKEN
         self._wazuh_socket = wazuh_socket or WAZUH_SOCKET_PATH
+        self._webhook_url  = WEBHOOK_URL
 
         self._has_splunk = bool(self._splunk_url and self._splunk_token)
         self._has_wazuh  = bool(self._wazuh_socket)
-        self._enabled    = self._has_splunk or self._has_wazuh
+        self._enabled    = self._has_splunk or self._has_wazuh or bool(self._webhook_url)
 
         self._queue: queue.Queue[dict] = queue.Queue(maxsize=2048)
 
@@ -70,6 +72,8 @@ class SIEMForwarder:
                 targets.append("Splunk HEC")
             if self._has_wazuh:
                 targets.append(f"Wazuh ({self._wazuh_socket})")
+            if self._webhook_url:
+                targets.append("Webhook (Discord/Slack)")
             print(f"[siem] Forwarder active → {', '.join(targets)}")
         else:
             self._worker = None
@@ -91,6 +95,24 @@ class SIEMForwarder:
         except queue.Full:
             print("[siem] Queue full — dropping event", file=sys.stderr)
 
+    def forward_webhook(self, message: str) -> None:
+        """
+        Immediately enqueue a generic alert string to be sent to the configured Webhook URL.
+        """
+        if not self._webhook_url:
+            return
+        
+        # If it's a discord URL without /slack, we should use 'content', otherwise 'text'
+        if "discord.com" in self._webhook_url and not self._webhook_url.endswith("/slack"):
+            payload = {"content": message}
+        else:
+            payload = {"text": message}
+            
+        try:
+            self._queue.put_nowait({"_webhook_payload": payload})
+        except queue.Full:
+            pass
+
     # ── Worker loop ────────────────────────────────────────────────────
 
     def _run(self) -> None:
@@ -99,6 +121,10 @@ class SIEMForwarder:
             try:
                 event = self._queue.get()
             except Exception:
+                continue
+
+            if "_webhook_payload" in event:
+                self._send_webhook(event["_webhook_payload"])
                 continue
 
             if self._has_splunk:
@@ -150,6 +176,31 @@ class SIEMForwarder:
             except (OSError, socket.error) as exc:
                 print(
                     f"[siem] Wazuh socket error: {exc} (attempt {attempt}/{_MAX_RETRIES})",
+                    file=sys.stderr,
+                )
+            if attempt < _MAX_RETRIES:
+                time.sleep(_RETRY_DELAY)
+
+    # ── Discord/Slack Webhook ──────────────────────────────────────────
+
+    def _send_webhook(self, payload: dict) -> None:
+        """POST generic message to Discord or Slack."""
+        for attempt in range(1, _MAX_RETRIES + 1):
+            try:
+                resp = requests.post(
+                    self._webhook_url,
+                    json=payload,
+                    timeout=_HTTP_TIMEOUT,
+                )
+                if resp.status_code < 300:
+                    return
+                print(
+                    f"[siem] Webhook {resp.status_code} (attempt {attempt}/{_MAX_RETRIES})",
+                    file=sys.stderr,
+                )
+            except requests.RequestException as exc:
+                print(
+                    f"[siem] Webhook error: {exc} (attempt {attempt}/{_MAX_RETRIES})",
                     file=sys.stderr,
                 )
             if attempt < _MAX_RETRIES:

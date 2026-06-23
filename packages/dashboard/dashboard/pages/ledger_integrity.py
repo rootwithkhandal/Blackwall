@@ -22,7 +22,7 @@ def render(fw, ledger) -> None:
             st.error(f"⚠️ **{len(issues)} integrity issue(s) found!**")
             st.dataframe(
                 pd.DataFrame(issues),
-                use_container_width=True, hide_index=True,
+                width="stretch", hide_index=True,
                 column_config={
                     "index": st.column_config.NumberColumn("Block #"),
                     "issue": st.column_config.TextColumn("Issue"),

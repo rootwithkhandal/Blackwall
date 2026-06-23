@@ -21,7 +21,7 @@ def render(fw, ledger) -> None:
 
         st.dataframe(
             pd.DataFrame({"Banned IP": banned}),
-            use_container_width=True,
+            width="stretch",
             hide_index=True,
             column_config={
                 "Banned IP": st.column_config.TextColumn("🔴 Banned IP Address"),

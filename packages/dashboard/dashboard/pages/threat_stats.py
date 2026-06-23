@@ -48,7 +48,7 @@ def render(fw, ledger) -> None:
         textposition="inside", textinfo="percent+label",
         marker=dict(line=dict(color="#0B0F19", width=2)),
     )
-    left.plotly_chart(fig_proto, use_container_width=True)
+    left.plotly_chart(fig_proto, width="stretch")
 
     verdict_counts = Counter(p["verdict"] for p in logs)
     df_verdict = pd.DataFrame(verdict_counts.items(), columns=["Verdict", "Count"])
@@ -70,7 +70,7 @@ def render(fw, ledger) -> None:
         textposition="inside", textinfo="percent+label",
         marker=dict(line=dict(color="#0B0F19", width=2)),
     )
-    right.plotly_chart(fig_verdict, use_container_width=True)
+    right.plotly_chart(fig_verdict, width="stretch")
 
     # ── Top talkers ───────────────────────────────────────────────────────────
     left2, right2 = st.columns(2)
@@ -81,7 +81,7 @@ def render(fw, ledger) -> None:
         if top_ips:
             st.dataframe(
                 pd.DataFrame(top_ips, columns=["IP", "Packets"]),
-                use_container_width=True, hide_index=True,
+                width="stretch", hide_index=True,
             )
 
     with right2:
@@ -90,7 +90,7 @@ def render(fw, ledger) -> None:
         if top_ports:
             st.dataframe(
                 pd.DataFrame(top_ports, columns=["Port", "Hits"]),
-                use_container_width=True, hide_index=True,
+                width="stretch", hide_index=True,
             )
 
     # ── GeoIP World Map Heatmap ───────────────────────────────────────────────
@@ -142,7 +142,7 @@ def render(fw, ledger) -> None:
                     ),
                     coloraxis_colorbar=dict(title="Hits", x=0.95)
                 )
-                st.plotly_chart(fig_geo, use_container_width=True)
+                st.plotly_chart(fig_geo, width="stretch")
             else:
                 st.info("No external IP data mapped yet.")
         except Exception as e:

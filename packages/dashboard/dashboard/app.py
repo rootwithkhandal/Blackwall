@@ -457,8 +457,7 @@ authenticator = stauth.Authenticate(
     auth_config['credentials'],
     auth_config['cookie']['name'],
     auth_config['cookie']['key'],
-    auth_config['cookie']['expiry_days'],
-    auth_config['preauthorized']
+    auth_config['cookie']['expiry_days']
 )
 
 try:
