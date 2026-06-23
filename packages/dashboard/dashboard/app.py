@@ -427,12 +427,12 @@ if not os.path.exists(auth_config_path):
                 'admin': {
                     'email': 'admin@blackwall.local',
                     'name': 'Administrator',
-                    'password': stauth.Hasher(['admin123']).generate()[0]
+                    'password': 'admin123'
                 },
                 'demo': {
                     'email': 'demo@blackwall.local',
                     'name': 'Demo User',
-                    'password': stauth.Hasher(['demo123']).generate()[0]
+                    'password': 'demo123'
                 }
             }
         },
@@ -445,6 +445,7 @@ if not os.path.exists(auth_config_path):
             'emails': []
         }
     }
+    stauth.Hasher.hash_passwords(default_config['credentials'])
     with open(auth_config_path, 'w') as f:
         yaml.dump(default_config, f, default_flow_style=False)
 

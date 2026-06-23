@@ -330,7 +330,7 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 - [x] Monorepo architecture
 - [x] Premium dark-theme dashboard with glassmorphism and gradient accents
 - [x] GeoIP world-map heatmap (MaxMind GeoLite2)
-- [ ] Discord / Slack webhook alerts on spike detection
+- [x] Discord / Slack webhook alerts on spike detection
 - [x] Threat-intel feed integration (AbuseIPDB, Shodan)
 - [x] Docker image for one-command deployment
 - [x] PCAP export of captured packets
