@@ -1,6 +1,8 @@
 import threading
 import uvicorn
+import os
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 from blackwall.firewall import Firewall
 from blackwall.blockchain import Blockchain
 
@@ -14,6 +16,10 @@ def start_api_server(fw: Firewall, ledger: Blockchain, port: int = 8000):
         description="REST API for automated SOC integrations (n8n, Tines, Slack).",
         version="2.1.0"
     )
+
+    docs_dir = os.path.join(os.getcwd(), "docs")
+    if os.path.exists(docs_dir):
+        app.mount("/docs", StaticFiles(directory=docs_dir, html=True), name="docs")
 
     @app.get("/rules", tags=["Firewall"])
     def get_rules():

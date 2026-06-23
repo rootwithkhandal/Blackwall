@@ -499,6 +499,9 @@ if st.session_state.get("authentication_status"):
 
     # Navigation
     page = st.sidebar.radio("Navigation", list(PAGES.keys()), label_visibility="collapsed")
+    
+    st.sidebar.markdown("<br>", unsafe_allow_html=True)
+    st.sidebar.link_button("❓ Help / Docs", "http://localhost:8000/docs/index.html", use_container_width=True)
 
     # Stats grid
     stats = fw.get_stats()
