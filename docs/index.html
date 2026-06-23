@@ -7,7 +7,7 @@
     <meta name="description" content="BlackWall is an open-source, ML-powered Security Operations Center and firewall engine that brings enterprise-level network monitoring to your local machine.">
     <meta name="keywords" content="BlackWall, SOC, Security Operations Center, Firewall, ML Anomaly Detection, IsolationForest, Scapy, SIEM, Splunk, Wazuh">
     <meta property="og:title" content="BlackWall - ML-Powered Security Operations Center">
-    <meta property="og:description" content="Transform your local machine into a mini SOC with real-time network monitoring, machine learning anomaly detection, and cryptographic ledgers.">
+    <meta property="og:description" content="Transform your local machine into a mini SOC with real-time network monitoring, machine learning anomaly detection, and JSONL ledgers.">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="BlackWall - ML-Powered Security Operations Center">
@@ -40,7 +40,7 @@
                 <div>
                     <h1>BlackWall</h1>
                     <p style="font-size: 1.25rem; margin-bottom: 1.5rem;">ML-Powered Security Operations Center</p>
-                    <p>BlackWall transforms your local machine into a mini SOC. It monitors network traffic in real-time, leveraging machine learning to detect anomalies, instantly enforcing IP bans, and recording all decisions to an immutable cryptographic ledger.</p>
+                    <p>BlackWall transforms your local machine into a mini SOC. It monitors network traffic in real-time, leveraging machine learning to detect anomalies, instantly enforcing IP bans, and recording all decisions to an immutable JSONL ledger.</p>
                     <div class="hero-actions">
                         <a href="http://localhost:8501" class="btn btn-primary">Launch App</a>
                         <a href="https://github.com/rootwithkhandal/blackwall" target="_blank" class="btn btn-outline">Source Code</a>
@@ -92,7 +92,7 @@
 
         <section id="architecture" class="section-light">
             <div class="container">
-                <h2>Architecture & Blockchain Integrity</h2>
+                <h2>Architecture & Logging Integrity</h2>
                 <p>The BlackWall architecture separates concerns. Background daemon threads capture traffic, the ML detector evaluates it, and verdicts are dispatched both to system-level firewalls and external SIEMs simultaneously.</p>
 
                 <div class="flowchart">
@@ -106,7 +106,7 @@
                 <ul class="pricing-features" style="max-width: 600px; margin: 2rem auto;">
                     <li><strong>SIEM Integration:</strong> Forward drops and bans directly to Splunk HEC and Wazuh.</li>
                     <li><strong>Webhook Alerts:</strong> Instant notifications for Discord and Slack when spikes occur.</li>
-                    <li><strong>Cryptographic Ledger:</strong> All firewall decisions are chained and signed, making tampering impossible.</li>
+                    <li><strong>JSONL Ledger:</strong> All firewall decisions are appended to a stable JSON file for auditing.</li>
                 </ul>
             </div>
         </section>
@@ -207,7 +207,7 @@
                             <li>Splunk HEC Forwarding</li>
                             <li>FastAPI REST Endpoints</li>
                             <li>Slack & Discord Incident Alerts</li>
-                            <li>Immutable Cryptographic Audits</li>
+                            <li>Immutable JSONL Audits</li>
                         </ul>
                         <a href="architecture.html" class="btn btn-primary" style="width: 100%;">Explore Architecture</a>
                     </div>
@@ -232,8 +232,8 @@
                         <div class="faq-answer">It uses an Isolation Forest algorithm from scikit-learn. The system profiles your baseline traffic for the first 5 minutes. After that, any sudden spikes in packet rates or unusual port activity are flagged as anomalies and automatically blocked.</div>
                     </details>
                     <details class="faq-item">
-                        <summary class="faq-question">Why does it use a Blockchain ledger? <span class="faq-toggle">+</span></summary>
-                        <div class="faq-answer">A key requirement for incident response and compliance is untampered logs. BlackWall chains every firewall rule and drop verdict into a cryptographic ledger. If a malicious actor gains access and tries to delete their logs, the integrity check will immediately flag the tampering.</div>
+                        <summary class="faq-question">How does it log traffic? <span class="faq-toggle">+</span></summary>
+                        <div class="faq-answer">A key requirement for incident response is stable logs. BlackWall appends every firewall rule and drop verdict into a flat JSONL ledger.</div>
                     </details>
                     <details class="faq-item">
                         <summary class="faq-question">Does it run on Windows or Linux? <span class="faq-toggle">+</span></summary>

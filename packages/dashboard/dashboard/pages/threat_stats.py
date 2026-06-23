@@ -13,7 +13,8 @@ _CHART_GRID = "rgba(124, 106, 255, 0.06)"
 def render(fw) -> None:
     st.title("📊 Threat Statistics")
 
-    logs  = st.session_state["packets"]
+    all_packets = [pkt for q in st.session_state["packets"].values() for pkt in q]
+    logs = all_packets
     stats = fw.get_stats()
 
     # ── Top-level metrics ─────────────────────────────────────────────────────

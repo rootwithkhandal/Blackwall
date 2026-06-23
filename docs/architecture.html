@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BlackWall - Architecture</title>
-    <meta name="description" content="Explore the architecture of the BlackWall ML-powered Security Operations Center. Learn about the Scapy packet engine, Isolation Forest ML, and Blockchain ledger.">
-    <meta name="keywords" content="BlackWall Architecture, ML Firewall, Scapy, IsolationForest, Blockchain Ledger, SIEM Architecture">
+    <meta name="description" content="Explore the architecture of the BlackWall ML-powered Security Operations Center. Learn about the Scapy packet engine, Isolation Forest ML, and JSONL ledger.">
+    <meta name="keywords" content="BlackWall Architecture, ML Firewall, Scapy, IsolationForest, JSONL Ledger, SIEM Architecture">
     <meta property="og:title" content="BlackWall - Architecture">
     <meta property="og:description" content="Explore the decoupled, high-performance architecture powering the BlackWall mini SOC.">
     <meta property="og:type" content="website">
@@ -29,8 +29,8 @@
             <p>Daemon threads silently capture live network traffic using Scapy, extracting essential layers (IP, TCP, UDP) without blocking Streamlit's UI loop.</p>
             <h2>2. Machine Learning Detector</h2>
             <p>Utilizing scikit-learn's Isolation Forest, BlackWall builds a baseline for 5 minutes. Any deviations from normal rate or port heuristics trigger automated mitigation.</p>
-            <h2>3. Immutable Blockchain Ledger</h2>
-            <p>To prevent malicious cover-ups, every auto-ban and allow rule is cryptographically hashed and appended to a local blockchain, providing a mathematically verifiable audit trail.</p>
+            <h2>3. Immutable JSONL Ledger</h2>
+            <p>To provide a clear audit trail, every auto-ban and allow rule is appended to a local JSONL ledger file.</p>
             <h2>4. Multi-SIEM Forwarding</h2>
             <p>Bans and drops are instantly sent to Splunk HEC, Wazuh, Discord, and Slack via an asynchronous queue system, alerting security engineers the moment an incident occurs.</p>
         </div>

@@ -6,7 +6,7 @@
 
 ## Overview
 
-BlackWall turns your Linux machine into a mini SOC. It captures live network packets with Scapy, evaluates them against a dynamic rule set, detects anomalies with an IsolationForest ML model, logs every decision to an immutable blockchain ledger signed with RSA keys, forwards DROP/BAN events to Splunk or Wazuh, and presents everything through an interactive Streamlit dashboard.
+BlackWall turns your Linux machine into a mini SOC. It captures live network packets with Scapy, evaluates them against a dynamic rule set, detects anomalies with an IsolationForest ML model, logs every decision to an immutable ledger, forwards DROP/BAN events to Splunk or Wazuh, and presents everything through an interactive Streamlit dashboard.
 
 ---
 
@@ -18,7 +18,7 @@ BlackWall turns your Linux machine into a mini SOC. It captures live network pac
 | **Anomaly detection** | IsolationForest ML model replaces static rate-limit auto-ban — catches slow-and-low attacks |
 | **SIEM integration** | Fire-and-forget alert forwarding to Splunk HEC and Wazuh agent socket |
 | **Firewall engine** | Rule persistence (JSON), rule deletion, automatic IP banning |
-| **Blockchain** | Proof-of-work mining (configurable difficulty), stable JSON-serialised data hashing, one-click JSON export |
+| **Ledger** | Stable JSON-serialised data logging, one-click JSON export |
 | **Dashboard** | 7 pages with premium dark theme, glassmorphism cards, gradient accents, Plotly dark charts, live ML status badge |
 | **Design system** | Custom Streamlit theme, Inter font, color-coded stats (green/red/yellow), animated sidebar, styled empty states |
 | **Code quality** | Type hints throughout, thread-safe locks, bounded packet buffer, graceful iptables fallback on Windows |
@@ -75,18 +75,8 @@ Python 3.11+ recommended.
 - Lists all auto-banned IPs with one-click unban
 - ML anomaly detection with IsolationForest — baselines for 5 min, then scores per-IP traffic windows
 
-### 🔒 Ledger Integrity
-- Checks every block for hash mismatch, broken chain linkage, and invalid RSA signature
-- Reports exact block indices and issue types
-
-### 🔍 Block Inspector
-- Browse any block by index
-- View index, timestamp, nonce, signer, hash, prev-hash, data, and signature
-- One-click signature verification
-- **Forensic PCAP Download**: Instantly download the raw packets that triggered an auto-ban directly from the blockchain log.
-
 ### 💾 Export Ledger
-- Download the full blockchain as a pretty-printed JSON file
+- Download the full JSONL ledger file directly from the UI.
 
 ---
 
@@ -98,7 +88,6 @@ BlackWall/
 │   ├── core/                          # Engine (pip: "blackwall")
 │   │   ├── blackwall/
 │   │   │   ├── __init__.py
-│   │   │   ├── blockchain.py          # Block, Blockchain — PoW, RSA signing, export
 │   │   │   ├── firewall.py            # Firewall engine — rules, ML-based auto-ban, SIEM
 │   │   │   ├── ml_detector.py         # IsolationForest anomaly detector
 │   │   │   └── siem_forwarder.py      # Splunk HEC + Wazuh alert forwarding
@@ -114,8 +103,6 @@ BlackWall/
 │       │       ├── threat_stats.py
 │       │       ├── manage_rules.py
 │       │       ├── banned_ips.py
-│       │       ├── ledger_integrity.py
-│       │       ├── block_inspector.py
 │       │       └── export_ledger.py
 │       └── pyproject.toml
 │
@@ -272,7 +259,7 @@ BlackWall automatically runs a FastAPI server concurrently with the dashboard on
 - `GET http://localhost:8000/rules` - Returns all active firewall rules.
 - `GET http://localhost:8000/banned` - Returns a list of auto-banned IPs.
 - `GET http://localhost:8000/stats` - Returns live traffic metrics.
-- `GET http://localhost:8000/ledger?limit=50` - Returns the immutable blockchain log.
+- `GET http://localhost:8000/ledger?limit=50` - Returns the JSONL ledger.
 
 ### Disabling
 
@@ -287,8 +274,7 @@ If neither `SPLUNK_HEC_URL`/`SPLUNK_HEC_TOKEN` nor `WAZUH_SOCKET_PATH` is set, t
 | ML baseline duration | `packages/core` → `ml_detector.py` → `BASELINE_DURATION` | 300 s (5 min) |
 | ML scoring window | `packages/core` → `ml_detector.py` → `WINDOW_SECONDS` | 10 s |
 | ML contamination | `packages/core` → `ml_detector.py` → `CONTAMINATION` | 0.05 (5%) |
-| PoW difficulty | `packages/dashboard` → `app.py` → `Blockchain(..., difficulty=2)` | 2 leading zeros |
-| Packet buffer size | `packages/dashboard` → `app.py` → buffer trim logic | 5 000 / trim to 2 000 |
+| Packet buffer size | `packages/dashboard` → `app.py` → ring buffer logic | 200 pkts / flow |
 | Attack spike alert | `packages/dashboard` → `live_logs.py` → `DROP_THRESHOLD` | 15 drops / 10 pkts |
 | Dashboard theme | `.streamlit/config.toml` | Deep purple dark theme |
 | Splunk HEC URL | env var `SPLUNK_HEC_URL` | _(disabled)_ |
@@ -336,7 +322,6 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 
 ## Security Notes
 
-- `fw_key.pem` is generated automatically on first run and stored unencrypted. Protect it like any private key — it is git-ignored.
 - The dashboard is intended for isolated homelabs. Do not expose it to the public internet without authentication.
 - **Firewall Persistence**: On Linux, iptables rules are automatically saved to `/etc/iptables/rules.v4`. If you run BlackWall using the provided systemd service, these rules are restored on boot.
 - SIEM credentials in `.env` should be kept out of version control (`.env` is git-ignored; only `.env.example` is committed).

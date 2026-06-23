@@ -25,7 +25,9 @@ def render(fw) -> None:
     st.title("🖥️ Live Packet Feed")
     st_autorefresh(interval=1500, key="live_refresh")
 
-    logs = st.session_state["packets"][-500:]
+    all_packets = [pkt for q in st.session_state["packets"].values() for pkt in q]
+    all_packets.sort(key=lambda p: p.get("timestamp", ""))
+    logs = all_packets[-500:]
 
     # ── Filters ───────────────────────────────────────────────────────────────
     col1, col2, col3 = st.columns(3)

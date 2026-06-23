@@ -149,7 +149,15 @@ class Firewall:
     def _send_siem(self, event):
         import urllib.request, json
         try:
-            req = urllib.request.Request(self.siem_url, json.dumps({"text": json.dumps(event)}).encode(), {"Content-Type": "application/json"})
+            payload_str = json.dumps(event, indent=2)
+            if "discord.com" in self.siem_url:
+                data = json.dumps({"content": f"```json\n{payload_str}\n```"}).encode()
+            elif "slack.com" in self.siem_url:
+                data = json.dumps({"text": f"```json\n{payload_str}\n```"}).encode()
+            else:
+                data = json.dumps({"text": json.dumps(event)}).encode()
+
+            req = urllib.request.Request(self.siem_url, data, {"Content-Type": "application/json"})
             urllib.request.urlopen(req, timeout=5)
         except Exception:
             pass

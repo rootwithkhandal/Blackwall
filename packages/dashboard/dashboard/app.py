@@ -377,9 +377,11 @@ if IS_SIMULATION:
         st.session_state["simulator"] = AttackSimulator()
         st.session_state["simulator"].start()
 
+from collections import defaultdict
+
 # ── Packet buffer (main thread only) ───────────────────────────────────────────
 if "packets" not in st.session_state:
-    st.session_state["packets"] = []
+    st.session_state["packets"] = defaultdict(lambda: deque(maxlen=200))
 if "rolling_allow" not in st.session_state:
     st.session_state["rolling_allow"] = deque(maxlen=100)
 if "rolling_drop" not in st.session_state:
@@ -388,13 +390,10 @@ if "rolling_drop" not in st.session_state:
 # Drain the global thread-safe queue into the UI's session state
 while not pkt_queue.empty():
     try:
-        st.session_state["packets"].append(pkt_queue.get_nowait())
+        pkt = pkt_queue.get_nowait()
+        st.session_state["packets"][pkt["src"]].append(pkt)
     except queue.Empty:
         break
-
-# Keep buffer bounded
-if len(st.session_state["packets"]) > 5000:
-    st.session_state["packets"] = st.session_state["packets"][-2000:]
 
 import yaml
 from yaml.loader import SafeLoader

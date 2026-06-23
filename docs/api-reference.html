@@ -7,7 +7,7 @@
     <meta name="description" content="BlackWall REST API documentation. Automate and integrate your Security Operations Center with external tools using our local FastAPI endpoints.">
     <meta name="keywords" content="BlackWall, API, REST, FastAPI, SOC, Firewall API">
     <meta property="og:title" content="BlackWall - API Reference">
-    <meta property="og:description" content="Programmable access to the BlackWall firewall engine and immutable ledger.">
+    <meta property="og:description" content="Programmable access to the BlackWall firewall engine and JSONL ledger.">
     <meta property="og:type" content="website">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="style.css" rel="stylesheet">
@@ -25,7 +25,7 @@
     <main class="content-section">
         <div class="container">
             <h1>API Reference</h1>
-            <p>Welcome to the BlackWall REST API documentation. The local API runs on port 8000 and provides programmable access to the firewall engine and the immutable ledger.</p>
+            <p>Welcome to the BlackWall REST API documentation. The local API runs on port 8000 and provides programmable access to the firewall engine and the JSONL ledger.</p>
 
             <h2>GET /rules</h2>
             <p>Returns the currently active user-defined firewall rules.</p>
@@ -46,7 +46,7 @@ curl http://localhost:8000/stats
             </div>
 
             <h2>GET /ledger</h2>
-            <p>Returns the recent cryptographic blocks from the immutable ledger representing firewall decisions.</p>
+            <p>Returns the recent records from the JSONL ledger representing firewall decisions.</p>
             <div class="code-block">
 curl http://localhost:8000/ledger?limit=10
             </div>
