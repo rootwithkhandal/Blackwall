@@ -140,6 +140,19 @@ BlackWall/
 
 ## Getting Started
 
+### One-Command Deployment (Docker - Recommended)
+
+The easiest way to run BlackWall without worrying about Python dependencies or root capabilities is using Docker Compose. Host networking and network capabilities are automatically handled.
+
+```bash
+git clone https://github.com/rootwithkhandal/blackwall.git
+cd blackwall
+
+# Start BlackWall in the background
+docker compose up -d
+```
+You can now access the dashboard at `http://localhost:8501`.
+
 ### Quick Start (mise)
 
 ```bash
@@ -319,9 +332,9 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 - [x] GeoIP world-map heatmap (MaxMind GeoLite2)
 - [ ] Discord / Slack webhook alerts on spike detection
 - [x] Threat-intel feed integration (AbuseIPDB, Shodan)
-- [ ] Docker image for one-command deployment
+- [x] Docker image for one-command deployment
 - [x] PCAP export of captured packets
-- [ ] Multi-user auth for the dashboard
+- [x] Multi-user auth for the dashboard
 
 ---
 

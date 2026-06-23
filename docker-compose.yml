@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  blackwall:
+    build: .
+    container_name: blackwall
+    # Host networking is required for packet sniffing and firewall rules
+    network_mode: "host"
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    volumes:
+      - ./data:/app/data
+      - ./.env:/app/.env
+    restart: unless-stopped
