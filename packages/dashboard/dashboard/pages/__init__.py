@@ -4,7 +4,5 @@ from dashboard.pages import (  # noqa: F401
     threat_stats,
     manage_rules,
     banned_ips,
-    ledger_integrity,
-    block_inspector,
     export_ledger,
 )

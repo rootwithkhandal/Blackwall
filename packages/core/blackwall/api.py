@@ -1,15 +1,15 @@
 import threading
 import uvicorn
 import os
+import json
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from blackwall.firewall import Firewall
-from blackwall.blockchain import Blockchain
 
-def start_api_server(fw: Firewall, ledger: Blockchain, port: int = 8000):
+def start_api_server(fw: Firewall, port: int = 8000):
     """
     Spawns a FastAPI application in a background daemon thread.
-    Exposes firewall rules, banned IPs, stats, and the blockchain ledger.
+    Exposes firewall rules, banned IPs, stats, and the ledger.
     """
     app = FastAPI(
         title="BlackWall SOC API",
@@ -29,7 +29,6 @@ def start_api_server(fw: Firewall, ledger: Blockchain, port: int = 8000):
     @app.get("/banned", tags=["Firewall"])
     def get_banned():
         """Get the current list of auto-banned IP addresses."""
-        # Using sorted list for deterministic JSON
         return {"banned_ips": sorted(list(fw.banned_ips))}
 
     @app.get("/stats", tags=["Metrics"])
@@ -37,14 +36,25 @@ def start_api_server(fw: Firewall, ledger: Blockchain, port: int = 8000):
         """Get live firewall traffic and enforcement statistics."""
         return fw.get_stats()
 
-    @app.get("/ledger", tags=["Blockchain"])
+    @app.get("/ledger", tags=["Logging"])
     def get_ledger(limit: int = 50):
-        """Get the most recent blocks from the immutable ledger."""
-        chain = [b.to_dict() for b in ledger.chain[-limit:]]
+        """Get the most recent lines from the ledger."""
+        lines = []
+        ledger_path = os.path.join(os.getcwd(), "data", "ledger.jsonl")
+        total = 0
+        if os.path.exists(ledger_path):
+            with open(ledger_path, "r") as f:
+                all_lines = f.readlines()
+                total = len(all_lines)
+                for line in all_lines[-limit:]:
+                    try:
+                        lines.append(json.loads(line))
+                    except:
+                        pass
         return {
-            "total_blocks": len(ledger.chain),
+            "total_logs": total,
             "limit": limit,
-            "blocks": chain
+            "logs": lines
         }
 
     def _run():

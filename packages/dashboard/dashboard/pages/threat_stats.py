@@ -10,7 +10,7 @@ _CHART_BG = "rgba(0,0,0,0)"
 _CHART_GRID = "rgba(124, 106, 255, 0.06)"
 
 
-def render(fw, ledger) -> None:
+def render(fw) -> None:
     st.title("📊 Threat Statistics")
 
     logs  = st.session_state["packets"]

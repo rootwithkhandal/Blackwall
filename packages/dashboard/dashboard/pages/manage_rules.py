@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 
-def render(fw, ledger) -> None:
+def render(fw) -> None:
     st.title("📋 Firewall Rule Manager")
 
     # ── Add rule ──────────────────────────────────────────────────────────────

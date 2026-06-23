@@ -1,14 +1,15 @@
 """Live Logs page — real-time packet feed with filters and charts."""
 
 from collections import Counter
+from collections import deque
+import time
 
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from streamlit_autorefresh import st_autorefresh
-
-import time
+from blackwall.threat_intel import get_threat_intel
 
 # Configurable alert threshold (drops per 10-packet window)
 DROP_THRESHOLD = 15
@@ -20,7 +21,7 @@ _CHART_BG = "rgba(0,0,0,0)"
 _CHART_GRID = "rgba(124, 106, 255, 0.06)"
 
 
-def render(fw, ledger) -> None:
+def render(fw) -> None:
     st.title("🖥️ Live Packet Feed")
     st_autorefresh(interval=1500, key="live_refresh")
 
@@ -48,26 +49,19 @@ def render(fw, ledger) -> None:
     st.subheader(f"Recent Packets ({min(show_last_n, len(filtered))} shown)")
     if filtered:
         def get_intel_badge(ip: str) -> str:
-            intel = fw.threat_intel.get(ip)
+            intel = get_threat_intel(ip)
             if not intel:
                 return ""
             
-            abuse = intel.get("abuse_score")
-            cves = len(intel.get("cves", []))
-            vt = intel.get("vt_malicious")
+            malicious = intel.get("malicious", False)
+            score = intel.get("score", 0)
             
-            if (abuse is None or abuse == 0) and not cves and (vt is None or vt == 0):
+            if not malicious and score == 0:
                 return "🟢 Clean"
-                
-            parts = []
-            if abuse:
-                parts.append(f"{abuse}% Abuse")
-            if cves:
-                parts.append(f"{cves} CVEs")
-            if vt:
-                parts.append(f"{vt} VT Hits")
-                
-            return "🔴 " + " | ".join(parts) if parts else "🟢 Clean"
+            
+            badge = "🔴 Malicious " if malicious else "🟠 Suspicious "
+            badge += f"(Score: {score})"
+            return badge
 
         # Apply the badge function
         display_data = filtered[:show_last_n].copy()

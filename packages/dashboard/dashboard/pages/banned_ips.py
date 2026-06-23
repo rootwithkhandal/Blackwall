@@ -4,7 +4,7 @@ import pandas as pd
 import streamlit as st
 
 
-def render(fw, ledger) -> None:
+def render(fw) -> None:
     st.title("🚫 Auto-Banned IPs")
 
     banned = sorted(fw.banned_ips)

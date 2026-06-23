@@ -2,7 +2,7 @@
 """
 app.py — BlackWall entry point.
 
-Initialises shared state (RSA keys, blockchain, firewall, packet sniffer)
+Initialises shared state (firewall, packet sniffer)
 then routes to the selected dashboard page.
 
 Thread-safety note:
@@ -21,15 +21,12 @@ import time
 from collections import deque
 
 import streamlit as st
-from cryptography.hazmat.primitives.asymmetric import rsa
-from cryptography.hazmat.primitives import serialization
 from scapy.all import sniff, IP, TCP, UDP
 
-from blackwall.blockchain import Blockchain
 from blackwall.firewall   import Firewall
 from dashboard.pages      import (
     live_logs, threat_stats, manage_rules,
-    banned_ips, ledger_integrity, block_inspector, export_ledger,
+    banned_ips, export_ledger,
 )
 
 # ── Page config ────────────────────────────────────────────────────────────────
@@ -324,25 +321,11 @@ hr {
 # ── Backend Singleton ──────────────────────────────────────────────────────────
 @st.cache_resource
 def init_backend():
-    """Initialize singletons: Keys, Ledger, Firewall, and Sniffer thread."""
+    """Initialize singletons: Firewall, and Sniffer thread."""
     _DATA_DIR = os.path.join(os.getcwd(), "data")
     os.makedirs(_DATA_DIR, exist_ok=True)
 
-    _KEY_FILE = os.path.join(os.getcwd(), "fw_key.pem")
-    if os.path.exists(_KEY_FILE):
-        with open(_KEY_FILE, "rb") as _f:
-            _priv = serialization.load_pem_private_key(_f.read(), password=None)
-    else:
-        _priv = rsa.generate_private_key(public_exponent=65537, key_size=2048)
-        with open(_KEY_FILE, "wb") as _f:
-            _f.write(_priv.private_bytes(
-                encoding=serialization.Encoding.PEM,
-                format=serialization.PrivateFormat.TraditionalOpenSSL,
-                encryption_algorithm=serialization.NoEncryption(),
-            ))
-
-    ledger = Blockchain(_priv.public_key(), _priv, difficulty=2, data_dir=_DATA_DIR)
-    fw = Firewall(ledger, data_dir=_DATA_DIR)
+    fw = Firewall(data_dir=_DATA_DIR)
     pkt_queue = queue.SimpleQueue()
 
     def _on_packet(pkt) -> None:
@@ -369,7 +352,7 @@ def init_backend():
     # Start FastAPI REST server for SOC integration
     try:
         from blackwall.api import start_api_server
-        start_api_server(fw, ledger, port=8000)
+        start_api_server(fw, port=8000)
         with open("api_error.log", "a") as f:
             f.write("start_api_server successfully called\n")
     except Exception as e:
@@ -377,7 +360,7 @@ def init_backend():
             import traceback
             f.write(f"FATAL: {e}\n{traceback.format_exc()}\n")
 
-    return fw, ledger, pkt_queue
+    return fw, pkt_queue
 
 # Check for simulate flag
 IS_SIMULATION = "--simulate" in sys.argv
@@ -386,7 +369,7 @@ if IS_SIMULATION:
     # Shorten ML baseline for faster demo
     os.environ["BLACKWALL_SIMULATE"] = "1"
 
-fw, ledger, pkt_queue = init_backend()
+fw, pkt_queue = init_backend()
 
 if IS_SIMULATION:
     if "simulator" not in st.session_state:
@@ -438,8 +421,8 @@ if not os.path.exists(auth_config_path):
         },
         'cookie': {
             'expiry_days': 1,
-            'key': 'blackwall_auth_signature',
-            'name': 'blackwall_auth_cookie'
+            'key': 'blackwall_auth_signature_secure123',
+            'name': 'blackwall_auth_cookie_v2'
         },
         'preauthorized': {
             'emails': []
@@ -472,9 +455,7 @@ if st.session_state.get("authentication_status"):
         "📊  Threat Stats":     threat_stats,
         "📋  Manage Rules":     manage_rules,
         "🚫  Banned IPs":       banned_ips,
-        "🔒  Ledger Integrity": ledger_integrity,
-        "🔍  Block Inspector":  block_inspector,
-        "💾  Export Ledger":    export_ledger,
+        "💾  Export Logs":      export_ledger,
     }
 
     # Brand header
@@ -527,12 +508,15 @@ if st.session_state.get("authentication_status"):
     """, unsafe_allow_html=True)
 
     st.sidebar.markdown(
-        f'<div class="sidebar-footer">📦 {len(ledger)} ledger blocks  •  v2.1.0</div>',
+        f'<div class="sidebar-footer">v2.1.0</div>',
         unsafe_allow_html=True,
     )
 
     # ── Route ──────────────────────────────────────────────────────────────────────
-    PAGES[page].render(fw, ledger)
+    if page == "💾  Export Logs":
+        PAGES[page].render()
+    else:
+        PAGES[page].render(fw)
 elif st.session_state.get("authentication_status") is False:
     st.error("Username/password is incorrect")
 elif st.session_state.get("authentication_status") is None:
