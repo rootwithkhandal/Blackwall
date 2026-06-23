@@ -13,295 +13,7 @@
     <meta name="twitter:title" content="BlackWall - ML-Powered Security Operations Center">
     <meta name="twitter:description" content="Transform your local machine into a mini SOC with real-time network monitoring and ML anomaly detection.">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #E13B35;
-            --primary-hover: #C5302A;
-            --text-dark: #0F172A;
-            --text-gray: #64748B;
-            --bg-light: #F8FAFC;
-            --bg-white: #FFFFFF;
-            --border-color: #E2E8F0;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Inter', sans-serif;
-        }
-
-        body {
-            background-color: var(--bg-white);
-            color: var(--text-dark);
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 2rem;
-        }
-
-        /* Typography */
-        h1 { font-size: 3.5rem; font-weight: 800; line-height: 1.1; margin-bottom: 1.5rem; }
-        h2 { font-size: 2.25rem; font-weight: 700; margin-bottom: 1rem; }
-        h3 { font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem; }
-        p { color: var(--text-gray); margin-bottom: 1rem; }
-
-        .text-primary { color: var(--primary); }
-
-        /* Buttons */
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .btn-primary { background-color: var(--text-dark); color: white; }
-        .btn-primary:hover { background-color: #000; }
-        .btn-outline { background-color: white; color: var(--text-dark); border-color: var(--border-color); }
-        .btn-outline:hover { border-color: var(--text-dark); }
-        .btn-red { background-color: var(--primary); color: white; }
-        .btn-red:hover { background-color: var(--primary-hover); }
-
-        /* Navbar */
-        nav {
-            padding: 1.5rem 0;
-            border-bottom: 1px solid var(--border-color);
-            background: white;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-        .nav-container {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .logo {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--text-dark);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .logo span { color: var(--primary); }
-        .nav-links {
-            display: flex;
-            gap: 2rem;
-        }
-        .nav-links a {
-            text-decoration: none;
-            color: var(--text-gray);
-            font-weight: 500;
-        }
-        .nav-links a:hover { color: var(--text-dark); }
-        .nav-actions { display: flex; gap: 1rem; }
-
-        /* Sections */
-        section { padding: 6rem 0; }
-        .section-light { background-color: var(--bg-white); }
-        .section-gray { background-color: var(--bg-light); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); }
-
-        /* Hero */
-        .hero {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 4rem;
-            align-items: center;
-            padding: 8rem 0;
-        }
-        .hero-actions {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        .hero-visual {
-            background: var(--bg-light);
-            border: 1px solid var(--border-color);
-            border-radius: 1rem;
-            padding: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 400px;
-        }
-
-        /* Abstract Flowcharts */
-        .flowchart {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 1rem;
-            margin: 3rem 0;
-            flex-wrap: wrap;
-        }
-        .node {
-            background: white;
-            border: 1px solid var(--border-color);
-            padding: 1.5rem 2rem;
-            border-radius: 0.5rem;
-            font-weight: 600;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-            text-align: center;
-        }
-        .node.highlight {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: #FEF2F2;
-        }
-        .arrow {
-            color: var(--text-gray);
-            font-size: 1.5rem;
-            font-weight: bold;
-        }
-
-        /* Features Grid */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 2rem;
-            margin-top: 3rem;
-        }
-        .feature-card {
-            background: white;
-            padding: 2rem;
-            border-radius: 1rem;
-            border: 1px solid var(--border-color);
-        }
-        .feature-icon {
-            color: var(--primary);
-            font-size: 2rem;
-            margin-bottom: 1rem;
-        }
-
-        /* Tables */
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 2rem 0;
-            background: white;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border-radius: 0.5rem;
-            overflow: hidden;
-        }
-        .data-table th, .data-table td {
-            padding: 1rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border-color);
-        }
-        .data-table th { background: var(--bg-light); font-weight: 600; color: var(--text-dark); }
-        .data-table tbody tr:hover { background: #F8FAFC; }
-
-        /* Pricing */
-        .pricing-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 2rem;
-            max-width: 800px;
-            margin: 4rem auto 0;
-        }
-        .pricing-card {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 1rem;
-            padding: 3rem 2rem;
-            text-align: center;
-        }
-        .pricing-card.popular {
-            border-color: var(--primary);
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
-            position: relative;
-        }
-        .popular-badge {
-            position: absolute;
-            top: -12px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--primary);
-            color: white;
-            padding: 0.25rem 1rem;
-            border-radius: 1rem;
-            font-size: 0.875rem;
-            font-weight: 600;
-        }
-        .price { font-size: 3rem; font-weight: 800; margin: 1.5rem 0; }
-        .pricing-features {
-            text-align: left;
-            margin: 2rem 0;
-            list-style: none;
-        }
-        .pricing-features li {
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        .pricing-features li::before {
-            content: "✓";
-            color: var(--primary);
-            font-weight: bold;
-        }
-
-        /* FAQ */
-        .faq-list {
-            max-width: 800px;
-            margin: 3rem auto 0;
-        }
-        .faq-item {
-            border-bottom: 1px solid var(--border-color);
-            padding: 1.5rem 0;
-        }
-        .faq-question {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 600;
-            cursor: pointer;
-            color: var(--text-dark);
-        }
-        .faq-answer {
-            margin-top: 1rem;
-            color: var(--text-gray);
-            display: none;
-        }
-        .faq-item.active .faq-answer { display: block; }
-        .faq-toggle { font-size: 1.5rem; color: var(--primary); transition: transform 0.2s; }
-        .faq-item.active .faq-toggle { transform: rotate(45deg); }
-
-        /* Footer */
-        footer {
-            background: var(--text-dark);
-            color: white;
-            padding: 6rem 0 2rem;
-            text-align: center;
-        }
-        footer h2 { margin-bottom: 2rem; }
-        .footer-links {
-            display: flex;
-            justify-content: center;
-            gap: 2rem;
-            margin: 4rem 0 2rem;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            padding-top: 2rem;
-        }
-        .footer-links a { color: #94A3B8; text-decoration: none; }
-        .footer-links a:hover { color: white; }
-
-        @media (max-width: 768px) {
-            .hero, .pricing-grid, .features-grid { grid-template-columns: 1fr; }
-            .nav-links { display: none; }
-            h1 { font-size: 2.5rem; }
-        }
-    </style>
+    <link href="style.css" rel="stylesheet">
 </head>
 <body>
 
@@ -497,7 +209,7 @@
                             <li>Slack & Discord Incident Alerts</li>
                             <li>Immutable Cryptographic Audits</li>
                         </ul>
-                        <a href="https://github.com/rootwithkhandal/blackwall/docs/architecture.    html" class="btn btn-primary" style="width: 100%;">Explore Architecture</a>
+                        <a href="architecture.html" class="btn btn-primary" style="width: 100%;">Explore Architecture</a>
                     </div>
                 </div>
             </div>
@@ -511,22 +223,22 @@
                 </div>
 
                 <div class="faq-list">
-                    <div class="faq-item">
-                        <div class="faq-question">What is BlackWall? <span class="faq-toggle">+</span></div>
+                    <details class="faq-item">
+                        <summary class="faq-question">What is BlackWall? <span class="faq-toggle">+</span></summary>
                         <div class="faq-answer">BlackWall is an open-source, ML-powered Security Operations Center and firewall engine that brings enterprise-level network monitoring to your local machine.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">How does the ML anomaly detection work? <span class="faq-toggle">+</span></div>
+                    </details>
+                    <details class="faq-item">
+                        <summary class="faq-question">How does the ML anomaly detection work? <span class="faq-toggle">+</span></summary>
                         <div class="faq-answer">It uses an Isolation Forest algorithm from scikit-learn. The system profiles your baseline traffic for the first 5 minutes. After that, any sudden spikes in packet rates or unusual port activity are flagged as anomalies and automatically blocked.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">Why does it use a Blockchain ledger? <span class="faq-toggle">+</span></div>
+                    </details>
+                    <details class="faq-item">
+                        <summary class="faq-question">Why does it use a Blockchain ledger? <span class="faq-toggle">+</span></summary>
                         <div class="faq-answer">A key requirement for incident response and compliance is untampered logs. BlackWall chains every firewall rule and drop verdict into a cryptographic ledger. If a malicious actor gains access and tries to delete their logs, the integrity check will immediately flag the tampering.</div>
-                    </div>
-                    <div class="faq-item">
-                        <div class="faq-question">Does it run on Windows or Linux? <span class="faq-toggle">+</span></div>
+                    </details>
+                    <details class="faq-item">
+                        <summary class="faq-question">Does it run on Windows or Linux? <span class="faq-toggle">+</span></summary>
                         <div class="faq-answer">It runs on both! On Linux, BlackWall seamlessly integrates with iptables to enforce bans at the kernel level. On Windows, it gracefully falls back to application-layer packet inspection without breaking the dashboard.</div>
-                    </div>
+                    </details>
                 </div>
             </div>
         </section>
@@ -540,32 +252,14 @@
 
             <div class="footer-links">
                 <a href="http://localhost:8501">Dashboard</a>
-                <a href="https://github.com/rootwithkhandal/blackwall/docs/api-reference.html">API Reference</a>
+                <a href="api-reference.html">API Reference</a>
                 <a href="https://github.com/rootwithkhandal/blackwall" target="_blank">GitHub</a>
-                <a href="https://github.com/rootwithkhandal/blackwall/docs/privacy-policy.html">Privacy Policy</a>
+                <a href="privacy-policy.html">Privacy Policy</a>
             </div>
             <p style="color: #64748B; font-size: 0.875rem;">An Open Source Project.</p>
         </div>
     </footer>
 
-    <script>
-        // Simple FAQ Accordion Logic
-        document.querySelectorAll('.faq-question').forEach(question => {
-            question.addEventListener('click', () => {
-                const item = question.parentElement;
-                const isActive = item.classList.contains('active');
 
-                // Close all
-                document.querySelectorAll('.faq-item').forEach(faq => {
-                    faq.classList.remove('active');
-                });
-
-                // Open clicked
-                if (!isActive) {
-                    item.classList.add('active');
-                }
-            });
-        });
-    </script>
 </body>
 </html>

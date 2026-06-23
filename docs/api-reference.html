@@ -10,49 +10,14 @@
     <meta property="og:description" content="Programmable access to the BlackWall firewall engine and immutable ledger.">
     <meta property="og:type" content="website">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #E13B35;
-            --primary-hover: #C5302A;
-            --text-dark: #0F172A;
-            --text-gray: #64748B;
-            --bg-light: #F8FAFC;
-            --bg-white: #FFFFFF;
-            --border-color: #E2E8F0;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-white); color: var(--text-dark); line-height: 1.6; }
-        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
-        
-        h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1.5rem; }
-        h2 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
-        p { color: var(--text-gray); margin-bottom: 1rem; }
-
-        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; transition: all 0.2s; cursor: pointer; border: 2px solid transparent; }
-        .btn-primary { background-color: var(--text-dark); color: white; }
-        .btn-outline { background-color: white; color: var(--text-dark); border-color: var(--border-color); }
-
-        nav { padding: 1.5rem 0; border-bottom: 1px solid var(--border-color); background: white; position: sticky; top: 0; z-index: 100; }
-        .nav-container { display: flex; justify-content: space-between; align-items: center; }
-        .logo { font-size: 1.5rem; font-weight: 800; color: var(--text-dark); display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
-        .logo span { color: var(--primary); }
-        .nav-actions { display: flex; gap: 1rem; }
-
-        .content-section { padding: 4rem 0; min-height: 60vh; }
-        .code-block { background: var(--text-dark); color: #fff; padding: 1.5rem; border-radius: 0.5rem; font-family: monospace; overflow-x: auto; margin: 1rem 0 2rem; }
-
-        footer { background: var(--text-dark); color: white; padding: 4rem 0 2rem; text-align: center; }
-        .footer-links { display: flex; justify-content: center; gap: 2rem; margin: 2rem 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem; }
-        .footer-links a { color: #94A3B8; text-decoration: none; }
-    </style>
+    <link href="style.css" rel="stylesheet">
 </head>
 <body>
     <nav>
         <div class="container nav-container">
-            <a href="https://github.com/rootwithkhandal/blackwall/docs/index.html" class="logo">BlackWall <span>SOC</span></a>
+            <a href="https://github.com/rootwithkhandal/blackwall" class="logo">BlackWall <span>SOC</span></a>
             <div class="nav-actions">
-                <a href="https://github.com/rootwithkhandal/blackwall/docs/index.html" class="btn btn-outline">Back to Home</a>
+                <a href="index.html" class="btn btn-outline">Back to Home</a>
             </div>
         </div>
     </nav>
@@ -91,9 +56,9 @@ curl http://localhost:8000/ledger?limit=10
     <footer>
         <div class="container">
             <div class="footer-links">
-                <a href="https://github.com/rootwithkhandal/blackwall/docs/index.html">Home</a>
-                <a href="https://github.com/rootwithkhandal/blackwall/docs/architecture.html">Architecture</a>
-                <a href="https://github.com/rootwithkhandal/blackwall/docs/privacy-policy.html">Privacy Policy</a>
+                <a href="index.html">Home</a>
+                <a href="architecture.html">Architecture</a>
+                <a href="privacy-policy.html">Privacy Policy</a>
             </div>
             <p style="color: #64748B; font-size: 0.875rem;">An Open Source Project.</p>
         </div>
