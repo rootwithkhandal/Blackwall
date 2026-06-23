@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlackWall - Privacy Policy</title>
+    <meta name="description" content="BlackWall Privacy Policy. Learn how our local-first, open-source firewall handles your security data and external threat intelligence integrations.">
+    <meta name="keywords" content="BlackWall Privacy Policy, Security, Local-first, Open Source Firewall Privacy">
+    <meta property="og:title" content="BlackWall - Privacy Policy">
+    <meta property="og:description" content="Read about BlackWall's local-first privacy commitments.">
+    <meta property="og:type" content="website">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary: #E13B35; --text-dark: #0F172A; --text-gray: #64748B; --bg-white: #FFFFFF; --border-color: #E2E8F0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-white); color: var(--text-dark); line-height: 1.6; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 0 2rem; }
+        h1 { font-size: 3rem; font-weight: 800; margin-bottom: 1.5rem; }
+        h2 { font-size: 2rem; font-weight: 700; margin-top: 2rem; margin-bottom: 1rem; }
+        p { color: var(--text-gray); margin-bottom: 1rem; }
+        .btn { display: inline-flex; align-items: center; justify-content: center; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 600; text-decoration: none; border: 2px solid transparent; }
+        .btn-outline { background-color: white; color: var(--text-dark); border-color: var(--border-color); }
+        nav { padding: 1.5rem 0; border-bottom: 1px solid var(--border-color); background: white; position: sticky; top: 0; z-index: 100; }
+        .nav-container { display: flex; justify-content: space-between; align-items: center; }
+        .logo { font-size: 1.5rem; font-weight: 800; color: var(--text-dark); text-decoration: none; }
+        .logo span { color: var(--primary); }
+        .content-section { padding: 4rem 0; min-height: 60vh; }
+        footer { background: var(--text-dark); color: white; padding: 4rem 0 2rem; text-align: center; }
+        .footer-links { display: flex; justify-content: center; gap: 2rem; margin: 2rem 0; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 2rem; }
+        .footer-links a { color: #94A3B8; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="container nav-container">
+            <a href="https://github.com/rootwithkhandal/blackwall/docs/index.html" class="logo">BlackWall <span>SOC</span></a>
+            <div class="nav-actions">
+                <a href="https://github.com/rootwithkhandal/blackwall/docs/index.html" class="btn btn-outline">Back to Home</a>
+            </div>
+        </div>
+    </nav>
+    <main class="content-section">
+        <div class="container">
+            <h1>Privacy Policy</h1>
+            <p>Last Updated: June 2026</p>
+            <h2>Local First Privacy</h2>
+            <p>BlackWall is an open-source project designed to run locally on your infrastructure. All packet inspection, machine learning inference, and blockchain ledger hashing occurs strictly on your device.</p>
+            <h2>External Integrations</h2>
+            <p>If configured, BlackWall may send IP addresses to third-party Threat Intelligence providers (Shodan, AbuseIPDB, VirusTotal) to enrich security logs. Threat detection data (verdicts and IPs) may also be forwarded to your configured SIEM tools (Splunk, Wazuh) or Webhooks (Discord, Slack) if you provide the API keys.</p>
+            <h2>Data Collection</h2>
+            <p>We, the developers of BlackWall, do not track, collect, or store any of your network traffic or firewall decisions. You retain 100% ownership and control over your security data.</p>
+        </div>
+    </main>
+    <footer>
+        <div class="container">
+            <div class="footer-links">
+                <a href="https://github.com/rootwithkhandal/blackwall/docs/index.html">Home</a>
+                <a href="https://github.com/rootwithkhandal/blackwall/docs/architecture.html">Architecture</a>
+                <a href="https://github.com/rootwithkhandal/blackwall/docs/api-reference.html">API Reference</a>
+            </div>
+            <p style="color: #64748B; font-size: 0.875rem;">An Open Source Project.</p>
+        </div>
+    </footer>
+</body>
+</html>
