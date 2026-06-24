@@ -1,27 +1,27 @@
 # BlackWall
 
-**A homelab-grade Security Operations Centre firewall with ML anomaly detection, blockchain-backed logging, SIEM alert forwarding, and a premium Streamlit dashboard.**
+**A homelab-grade Security Operations Centre firewall with ML anomaly detection, blockchain-backed logging, webhook alert forwarding, and a premium Streamlit dashboard.**
 
 ---
 
 ## Overview
 
-BlackWall turns your Linux machine into a mini SOC. It captures live network packets with Scapy, evaluates them against a dynamic rule set, detects anomalies with an IsolationForest ML model, logs every decision to an immutable ledger, forwards DROP/BAN events to Splunk or Wazuh, and presents everything through an interactive Streamlit dashboard.
+BlackWall turns your Linux machine into a mini SOC. It captures live network packets with Scapy, evaluates them against a dynamic rule set, detects anomalies with an IsolationForest ML model, logs every decision to an immutable ledger, forwards DROP/BAN events via webhooks, and presents everything through an interactive Streamlit dashboard.
 
 ---
 
-## What's New (v2.1)
+## What's New
 
 | Area | Upgrade |
 |---|---|
 | **Architecture** | Python monorepo — `packages/core` (engine) + `packages/dashboard` (Streamlit UI), each with its own `pyproject.toml` |
 | **Anomaly detection** | IsolationForest ML model replaces static rate-limit auto-ban — catches slow-and-low attacks |
-| **SIEM integration** | Fire-and-forget alert forwarding to Splunk HEC and Wazuh agent socket |
-| **Firewall engine** | Rule persistence (JSON), rule deletion, automatic IP banning |
+| **Webhook integration** | Fire-and-forget alert forwarding to Discord or Slack |
+| **Firewall engine** | Rule persistence (JSON), rule deletion, automatic IP banning, native OS firewall integration |
 | **Ledger** | Stable JSON-serialised data logging, one-click JSON export |
-| **Dashboard** | 7 pages with premium dark theme, glassmorphism cards, gradient accents, Plotly dark charts, live ML status badge |
-| **Design system** | Custom Streamlit theme, Inter font, color-coded stats (green/red/yellow), animated sidebar, styled empty states |
-| **Code quality** | Type hints throughout, thread-safe locks, bounded packet buffer, graceful iptables fallback on Windows |
+| **Dashboard** | Premium dark theme, glassmorphism cards, gradient accents, Plotly dark charts, live ML status badge, block inspector |
+| **Design system** | Custom Streamlit theme, Inter font, color-coded stats, animated sidebar, styled empty states |
+| **API** | Built-in FastAPI server for REST integration |
 
 ---
 
@@ -32,10 +32,10 @@ BlackWall turns your Linux machine into a mini SOC. It captures live network pac
 | UI | Streamlit ≥ 1.35 |
 | Packet capture | Scapy ≥ 2.6 |
 | ML detection | scikit-learn ≥ 1.4 (IsolationForest) |
+| API | FastAPI & Uvicorn |
 | Cryptography | cryptography ≥ 42 |
 | Charts | Plotly ≥ 5.22 |
 | Data | Pandas ≥ 2.2 |
-| SIEM forwarding | Requests ≥ 2.32 |
 
 Python 3.11+ recommended.
 
@@ -45,20 +45,18 @@ Python 3.11+ recommended.
 
 ### 🧠 ML Anomaly Detection
 - IsolationForest model baselines normal traffic for 5 minutes on startup
-- Scores per-IP traffic windows using 4 features: `pkt_rate`, `byte_rate`, `unique_ports`, `protocol_entropy`
+- Scores per-IP traffic windows using packet rates and protocol entropy
 - Auto-bans IPs flagged as outliers — catches slow-and-low attacks that never trip a static threshold
 
-### 📡 SIEM Alert Forwarding
-- POSTs every DROP/BAN event to **Splunk HEC** and/or **Wazuh** agent socket
+### 📡 Webhook Alert Forwarding
+- POSTs auto-ban events to **Discord** or **Slack** webhooks
 - Fire-and-forget via background thread — zero impact on packet processing
 - Configured via environment variables; no-op when unconfigured
 
-### 🖥️ Live Logs
-- Auto-refreshing packet feed (every 1.5 s)
+### 🖥️ Live Logs & Block Inspector
+- Auto-refreshing packet feed
 - Filter by source IP, protocol, and verdict
-- Rolling ALLOW/DROP trend line chart
-- Attack spike alert when DROP rate exceeds threshold
-- Top-20 source IPs bar chart
+- Inspect specific traffic blocks with the Block Inspector page
 
 ### 📊 Threat Stats
 - Cumulative counters: total, allowed, dropped, auto-banned
@@ -73,7 +71,6 @@ Python 3.11+ recommended.
 
 ### 🚫 Banned IPs
 - Lists all auto-banned IPs with one-click unban
-- ML anomaly detection with IsolationForest — baselines for 5 min, then scores per-IP traffic windows
 
 ### 💾 Export Ledger
 - Download the full JSONL ledger file directly from the UI.
@@ -88,9 +85,12 @@ BlackWall/
 │   ├── core/                          # Engine (pip: "blackwall")
 │   │   ├── blackwall/
 │   │   │   ├── __init__.py
-│   │   │   ├── firewall.py            # Firewall engine — rules, ML-based auto-ban, SIEM
+│   │   │   ├── api.py                 # FastAPI server
+│   │   │   ├── firewall.py            # Firewall engine — rules, ML-based auto-ban, Webhook
 │   │   │   ├── ml_detector.py         # IsolationForest anomaly detector
-│   │   │   └── siem_forwarder.py      # Splunk HEC + Wazuh alert forwarding
+│   │   │   ├── os_firewall.py         # Native OS iptables integration
+│   │   │   ├── simulator.py           # Attack simulation
+│   │   │   └── threat_intel.py        # Threat intelligence
 │   │   └── pyproject.toml
 │   │
 │   └── dashboard/                     # Streamlit UI (pip: "blackwall-dashboard")
@@ -99,11 +99,12 @@ BlackWall/
 │       │   ├── app.py                 # Entry point — init, CSS injection, page routing
 │       │   └── pages/
 │       │       ├── __init__.py
-│       │       ├── live_logs.py
-│       │       ├── threat_stats.py
-│       │       ├── manage_rules.py
 │       │       ├── banned_ips.py
-│       │       └── export_ledger.py
+│       │       ├── block_inspector.py
+│       │       ├── export_ledger.py
+│       │       ├── live_logs.py
+│       │       ├── manage_rules.py
+│       │       └── threat_stats.py
 │       └── pyproject.toml
 │
 ├── .streamlit/
@@ -111,13 +112,10 @@ BlackWall/
 ├── scripts/
 │   └── install.sh                     # Automated setup (Linux / macOS)
 ├── data/                              # Runtime files (git-ignored)
-│   ├── ledger.json
-│   ├── rules.json
-│   └── banned_ips.json
-├── pyproject.toml                     # Root workspace config (linters, formatters)
+├── pyproject.toml                     # Root workspace config
 ├── mise.toml                          # Task runner (mise)
-├── .env                               # SIEM credentials (git-ignored)
-├── .env.example                       # SIEM credential template
+├── .env                               # Credentials (git-ignored)
+├── .env.example                       # Credential template
 ├── .gitignore
 ├── LICENSE
 └── README.md
@@ -129,7 +127,7 @@ BlackWall/
 
 ### One-Command Deployment (Docker - Recommended)
 
-The easiest way to run BlackWall without worrying about Python dependencies or root capabilities is using Docker Compose. Host networking and network capabilities are automatically handled.
+The easiest way to run BlackWall without worrying about Python dependencies or root capabilities is using Docker Compose.
 
 ```bash
 git clone https://github.com/rootwithkhandal/blackwall.git
@@ -150,28 +148,20 @@ cd blackwall
 pip3 install -r requirements.txt
 
 # Run the dashboard
-streamlit run app.py
+streamlit run packages/dashboard/dashboard/app.py
 ```
 
 ### Attack Simulation Mode
 
-For demos, CTFs, or job interviews, you can launch BlackWall in simulation mode. This creates a background thread that automatically generates synthetic attacks (SYN floods, Port scans, Slow loris, and DNS exfiltration) against `127.0.0.1` so you can instantly see the dashboard, ML anomaly detector, and Threat Intel features in action.
+For demos, CTFs, or job interviews, you can launch BlackWall in simulation mode.
 
 ```bash
-streamlit run app.py -- --simulate
+streamlit run packages/dashboard/dashboard/app.py -- --simulate
 ```
 *Note: Simulation mode truncates the ML baseline duration from 5 minutes to 5 seconds so auto-bans occur almost immediately.*
 
 ### Testing with Real Traffic (Ping Flood)
-Alternatively, you can test the ML Anomaly detector using live network traffic. Start the BlackWall dashboard normally, wait 5 minutes for the IsolationForest ML baseline to finish, and then execute a continuous ping flood from another terminal:
-```bash
-# Windows
-ping 8.8.8.8 -t
-
-# Linux / macOS
-ping 8.8.8.8
-```
-Within a few seconds, the spike in packet rates will trigger the ML anomaly detector and you'll see your IP automatically banned on the dashboard!
+Alternatively, you can test the ML Anomaly detector using live network traffic. Start the BlackWall dashboard normally, wait for the baseline to finish, and then execute a continuous ping flood from another terminal.
 
 ### Multi-User Authentication
 On the first run, BlackWall automatically generates a `data/auth_config.yaml` file to secure the dashboard with `streamlit-authenticator`.
@@ -184,9 +174,6 @@ You can change these passwords or add new users by editing the `data/auth_config
 ### Manual Setup
 
 ```bash
-git clone https://github.com/rootwithkhandal/blackwall.git
-cd blackwall
-
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 
@@ -197,11 +184,8 @@ streamlit run packages/dashboard/dashboard/app.py
 ```
 
 > **Linux note:** Scapy requires root (or `CAP_NET_RAW`) for live capture.
-> Run with `sudo -E streamlit run packages/dashboard/dashboard/app.py` or grant the capability to the Python binary.
 
 ### Running as a Service (Linux)
-
-To run BlackWall in the background and ensure your firewall rules survive a reboot, install the systemd service (assuming you cloned to `/opt/blackwall`):
 
 ```bash
 sudo cp scripts/blackwall.service /etc/systemd/system/
@@ -211,9 +195,7 @@ sudo systemctl enable --now blackwall
 
 ---
 
-## SIEM Integration
-
-BlackWall can forward every DROP and auto-BAN event to your SOC stack, as well as trigger instant alerts for traffic spikes. Configure via environment variables or a `.env` file (copy from `.env.example`):
+## Integrations & APIs
 
 ### Discord / Slack Webhook Alerts
 
@@ -222,48 +204,16 @@ To receive instant notifications when the dashboard detects a massive traffic sp
 ```bash
 export WEBHOOK_URL=https://discord.com/api/webhooks/...
 ```
-BlackWall automatically formats the alert properly for either Discord or Slack. Ensure your Slack webhook is compatible, or simply append `/slack` to the end of a Discord webhook URL if required.
-
-### Splunk HEC
-
-```bash
-export SPLUNK_HEC_URL=https://splunk.example.com:8088/services/collector/event
-export SPLUNK_HEC_TOKEN=your-hec-token-here
-```
-
-Events are POSTed as:
-```json
-{
-  "event": {
-    "type": "auto_ban",
-    "ip": "10.0.0.5",
-    "reason": "ML anomaly detection (IsolationForest)",
-    "timestamp": "2026-06-22T19:30:00+0530",
-    "source": "blackwall"
-  }
-}
-```
-
-### Wazuh
-
-```bash
-export WAZUH_SOCKET_PATH=/var/ossec/queue/sockets/queue
-```
-
-Events are written as JSON lines to the Wazuh agent Unix domain socket in the format `1:blackwall:{json}`.
+BlackWall automatically formats the alert properly for either Discord or Slack.
 
 ### REST API
 
-BlackWall automatically runs a FastAPI server concurrently with the dashboard on port `8000` (no extra setup required). You can use this to pull data into n8n, Tines, Slack bots, or other SOC automation tools:
+BlackWall automatically runs a FastAPI server concurrently with the dashboard on port `8000`.
 
 - `GET http://localhost:8000/rules` - Returns all active firewall rules.
 - `GET http://localhost:8000/banned` - Returns a list of auto-banned IPs.
 - `GET http://localhost:8000/stats` - Returns live traffic metrics.
 - `GET http://localhost:8000/ledger?limit=50` - Returns the JSONL ledger.
-
-### Disabling
-
-If neither `SPLUNK_HEC_URL`/`SPLUNK_HEC_TOKEN` nor `WAZUH_SOCKET_PATH` is set, the forwarder is a zero-overhead no-op.
 
 ---
 
@@ -273,48 +223,26 @@ If neither `SPLUNK_HEC_URL`/`SPLUNK_HEC_TOKEN` nor `WAZUH_SOCKET_PATH` is set, t
 |---|---|---|
 | ML baseline duration | `packages/core` → `ml_detector.py` → `BASELINE_DURATION` | 300 s (5 min) |
 | ML scoring window | `packages/core` → `ml_detector.py` → `WINDOW_SECONDS` | 10 s |
-| ML contamination | `packages/core` → `ml_detector.py` → `CONTAMINATION` | 0.05 (5%) |
-| Packet buffer size | `packages/dashboard` → `app.py` → ring buffer logic | 200 pkts / flow |
-| Attack spike alert | `packages/dashboard` → `live_logs.py` → `DROP_THRESHOLD` | 15 drops / 10 pkts |
 | Dashboard theme | `.streamlit/config.toml` | Deep purple dark theme |
-| Splunk HEC URL | env var `SPLUNK_HEC_URL` | _(disabled)_ |
-| Splunk HEC token | env var `SPLUNK_HEC_TOKEN` | _(disabled)_ |
-| Wazuh socket path | env var `WAZUH_SOCKET_PATH` | _(disabled)_ |
+| Webhook URL | env var `WEBHOOK_URL` | _(disabled)_ |
 | AbuseIPDB API key | env var `ABUSEIPDB_KEY` | _(disabled)_ |
 | Shodan API key | env var `SHODAN_KEY` | _(disabled)_ |
 
 ### Enabling the GeoIP World Map
 
 To see a beautiful choropleth heatmap of attack origins on the Threat Stats page:
-1. Ensure the `geoip2` Python library is installed (`pip install geoip2`).
-2. Create a free account at [MaxMind](https://dev.maxmind.com/geoip/geolite2-free-geolocation-data).
-3. Download the **GeoLite2-Country** database (MMDB format).
-4. Place the extracted `GeoLite2-Country.mmdb` file inside the `data/` directory.
-
-The dashboard will automatically detect the database and render the interactive heatmap!
+1. Ensure the `geoip2` Python library is installed.
+2. Download the **GeoLite2-Country** database (MMDB format) from MaxMind.
+3. Place the `GeoLite2-Country.mmdb` file inside the `data/` directory.
 
 ---
 
 ## Development
 
-### Installing Individual Packages
-
-```bash
-# Core engine only
-mise run req:core
-# or: pip install -e packages/core
-
-# Dashboard only (pulls core as a dependency)
-mise run req:dashboard
-# or: pip install -e packages/dashboard
-```
-
-### Monorepo Layout
-
 The project uses a Python monorepo pattern with two packages:
 
-- **`packages/core`** (`blackwall`) — the engine: firewall, blockchain, ML detector, SIEM forwarder. No UI dependencies.
-- **`packages/dashboard`** (`blackwall-dashboard`) — the Streamlit UI. Depends on `blackwall` core.
+- **`packages/core`** (`blackwall`) — the engine: firewall, ML detector, API, simulator.
+- **`packages/dashboard`** (`blackwall-dashboard`) — the Streamlit UI.
 
 Both are installed as editable packages (`pip install -e`), so changes are reflected immediately without reinstalling.
 
@@ -323,30 +251,19 @@ Both are installed as editable packages (`pip install -e`), so changes are refle
 ## Security Notes
 
 - The dashboard is intended for isolated homelabs. Do not expose it to the public internet without authentication.
-- **Firewall Persistence**: On Linux, iptables rules are automatically saved to `/etc/iptables/rules.v4`. If you run BlackWall using the provided systemd service, these rules are restored on boot.
-- SIEM credentials in `.env` should be kept out of version control (`.env` is git-ignored; only `.env.example` is committed).
+- **Firewall Persistence**: On Linux, iptables rules are automatically saved.
 
 ---
 
 ## Roadmap
 
 - [x] ML-based anomaly detection (IsolationForest)
-- [x] Splunk HEC / Wazuh alert forwarding
+- [x] API Server for SOC tools integration
 - [x] Monorepo architecture
-- [x] Premium dark-theme dashboard with glassmorphism and gradient accents
-- [x] GeoIP world-map heatmap (MaxMind GeoLite2)
+- [x] Premium dark-theme dashboard with glassmorphism
 - [x] Discord / Slack webhook alerts on spike detection
 - [x] Threat-intel feed integration (AbuseIPDB, Shodan)
 - [x] Docker image for one-command deployment
 - [x] PCAP export of captured packets
 - [x] Multi-user auth for the dashboard
-
----
-
-## Ideal For
-
-- Security students learning SOC workflows
-- Penetration testers practising blue-team defence
-- Red team / blue team lab exercises
-- Homelab network monitoring and anomaly detection
-- Azure / cloud SOC lab sensor feeding Splunk or Wazuh
+- [x] Block inspector dashboard page
